@@ -75,8 +75,7 @@ echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 emerge -qvquDU --getbinpkg @world
 
 # Firmware & kernel
-emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware
-emerge -qv sys-kernel/gentoo-kernel-bin
+emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
 
 # fstab
 emerge -qv sys-fs/genfstab
@@ -120,7 +119,7 @@ EOF
 # Root password
 # ----------------------------------------------------------
 echo ">>> Set root password"
-chroot /mnt/gentoo passwd
+arch-chroot /mnt/gentoo /bin/bash -c 'passwd'
 
 echo "=================================================="
 echo " Gentoo installation complete!"
