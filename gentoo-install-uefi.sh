@@ -79,6 +79,7 @@ emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo
 echo "gentoo" > /etc/hostname
 
 # Networking
+rc-update add dbus default
 emerge -qv net-misc/networkmanager
 rc-update add NetworkManager default
 
