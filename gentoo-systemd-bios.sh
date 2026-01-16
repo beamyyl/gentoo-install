@@ -94,5 +94,5 @@ echo ">>> Set root password"
 arch-chroot /mnt/gentoo /bin/bash -c 'passwd'
 
 echo "=================================================="
-echo " Gentoo systemd BIOS installation complete!"
+echo " Gentoo installation complete!"
 echo "=================================================="
