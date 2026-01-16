@@ -57,16 +57,16 @@ getuto
 emerge --sync --quiet
 
 # Mirrors
-emerge -gv --oneshot app-portage/mirrorselect
+emerge -qgv --oneshot app-portage/mirrorselect
 mirrorselect -i -o >> /etc/portage/make.conf
 
 # CPU flags
-emerge -gv --oneshot app-portage/cpuid2cpuflags
+emerge -gqv --oneshot app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
 echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 
 # World update (binary)
-emerge -vquDU --getbinpkg @world
+emerge -qvquDU --getbinpkg @world
 
 # Firmware & kernel
 emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware
