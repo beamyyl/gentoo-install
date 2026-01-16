@@ -3,7 +3,7 @@
 # This is the EFI installer.
 # Also, make sure to download the latest !! OPENRC !! stage3 file.
 
-links https://www.gentoo.org/downloads/mirrors
+links https://www.gentoo.org/downloads/
 tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
 cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 mount --types proc /proc /mnt/gentoo/proc
@@ -48,4 +48,5 @@ passwd
 EOF
 
 echo 'The installation is finished. You can chroot into the OS to do changes, or you can just reboot.'
+
 
