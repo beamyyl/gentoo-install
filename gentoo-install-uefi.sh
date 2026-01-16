@@ -25,10 +25,9 @@ tar xpvf stage3-*.tar.xz \
 # ----------------------------------------------------------
 # Binary packages
 # ----------------------------------------------------------
-cat <<EOF >> /mnt/gentoo/etc/portage/make.conf
-EMERGE_DEFAULT_OPTS="\${EMERGE_DEFAULT_OPTS} --getbinpkg"
-FEATURES="getbinpkg"
-EOF
+
+echo 'EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS} --getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
+echo 'FEATURES="getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
 
 cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 
