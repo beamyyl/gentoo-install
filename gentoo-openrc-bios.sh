@@ -6,7 +6,7 @@ set -e
 # This is the BIOS/MBR installer.
 # ----------------------------------------------------------
 
-echo ">>> Ensure your root partition is marked as 'Bootable' in fdisk/cfdisk."
+echo ">>> Ensure your root partition is marked as 'Bootable' in fdisk/cfdisk and that its MBR."
 sleep 3
 
 # ----------------------------------------------------------
