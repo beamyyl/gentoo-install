@@ -49,6 +49,13 @@ mount --bind /run /mnt/gentoo/run
 mount --make-rslave /mnt/gentoo/run
 
 # ----------------------------------------------------------
+# Generating FSTAB
+# ----------------------------------------------------------
+
+echo ">>> Generating fstab..."
+genfstab -U /mnt/gentoo >> /mnt/gentoo/etc/fstab
+
+# ----------------------------------------------------------
 # Enter chroot
 # ----------------------------------------------------------
 arch-chroot /mnt/gentoo /bin/bash <<'EOF'
