@@ -32,6 +32,12 @@ echo 'EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS} --getbinpkg"' >> /mnt/gentoo/e
 echo 'FEATURES="getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
 
 # ----------------------------------------------------------
+# Accept all licenses
+# ----------------------------------------------------------
+
+echo 'ACCEPT_LICENSE="*"' >> /mnt/gentoo/etc/portage/make.conf
+
+# ----------------------------------------------------------
 # Mount pseudo-filesystems
 # ----------------------------------------------------------
 mount -t proc /proc /mnt/gentoo/proc
