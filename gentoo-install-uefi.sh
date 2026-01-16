@@ -22,14 +22,14 @@ tar xpvf stage3-*.tar.xz \
   --numeric-owner \
   -C /mnt/gentoo
 
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
+
 # ----------------------------------------------------------
 # Binary packages
 # ----------------------------------------------------------
 
 echo 'EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS} --getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
 echo 'FEATURES="getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
-
-cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 
 # ----------------------------------------------------------
 # Mount pseudo-filesystems
@@ -45,12 +45,15 @@ mount --make-rslave /mnt/gentoo/run
 # ----------------------------------------------------------
 # Enter chroot
 # ----------------------------------------------------------
-chroot /mnt/gentoo /bin/bash <<'EOF'
+arch-chroot /mnt/gentoo /bin/bash <<'EOF'
 source /etc/profile
 export PS1="(gentoo) ${PS1}"
 
 # Sync portage
 emerge-webrsync
+emaint binhost --sync
+emerge-webrsync
+getuto
 emerge --sync --quiet
 
 # Mirrors
