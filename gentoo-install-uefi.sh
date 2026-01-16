@@ -1,20 +1,15 @@
+# ----------------------------------------------------------
 # made by beamyyl
-# MAKE SURE TO MOUNT EVERYTHING TO /mnt/gentoo AND ALREADY CONFIGURE THE DISKS!
 # This is the EFI installer.
-# Also, make sure to download the latest !! OPENRC !! stage3 file.
+# ----------------------------------------------------------
 #!/bin/bash
 set -e
 
-# ==========================================================
-# Gentoo EFI Install Script (LiveGUI, OpenRC)
-# Originally by beamyyl, fixed & recreated
-# ==========================================================
-
-echo ">>> Make sure disks are partitioned and mounted to /mnt/gentoo"
+echo ">>> Make sure disks are partitioned and mounted to /mnt/gentoo and /mnt/gentoo/efi."
 sleep 2
 
 # ----------------------------------------------------------
-# Download stage3 (manual step reminder)
+# Download stage3
 # ----------------------------------------------------------
 echo ">>> Select a mirror and download the latest OpenRC stage3"
 links https://www.gentoo.org/downloads/mirrors
@@ -35,9 +30,6 @@ EMERGE_DEFAULT_OPTS="\${EMERGE_DEFAULT_OPTS} --getbinpkg"
 FEATURES="getbinpkg"
 EOF
 
-# ----------------------------------------------------------
-# DNS
-# ----------------------------------------------------------
 cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 
 # ----------------------------------------------------------
@@ -52,7 +44,7 @@ mount --bind /run /mnt/gentoo/run
 mount --make-rslave /mnt/gentoo/run
 
 # ----------------------------------------------------------
-# Enter chroot commands
+# Enter chroot
 # ----------------------------------------------------------
 chroot /mnt/gentoo /bin/bash <<'EOF'
 source /etc/profile
@@ -123,7 +115,8 @@ echo ">>> Set root password"
 chroot /mnt/gentoo passwd
 
 echo "=================================================="
-echo " Gentoo installation complete."
+echo " Gentoo installation complete!"
 echo " You may reboot or chroot back in to continue."
 echo "=================================================="
+
 
