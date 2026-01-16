@@ -6,7 +6,7 @@
 set -e
 
 echo ">>> Make sure disks are partitioned and mounted to /mnt/gentoo and /mnt/gentoo/boot/efi."
-sleep 2
+sleep 3
 
 # ----------------------------------------------------------
 # Download stage3
