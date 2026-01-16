@@ -12,7 +12,7 @@ sleep 2
 # Download stage3
 # ----------------------------------------------------------
 echo ">>> Select a mirror and download the latest OpenRC stage3"
-links https://www.gentoo.org/downloads/mirrors
+links https://www.gentoo.org/downloads/
 
 # ----------------------------------------------------------
 # Extract stage3
