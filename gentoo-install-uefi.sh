@@ -71,6 +71,7 @@ echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 emerge -qvquDU --getbinpkg @world
 
 # Firmware & kernel
+mkdir -p /etc/portage/package.use
 echo 'sys-kernel/installkernel dracut' >> /etc/portage/package.use/00installkernel
 emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
 
