@@ -2,13 +2,13 @@
 # MAKE SURE TO MOUNT EVERYTHING TO /mnt/gentoo AND ALREADY CONFIGURE THE DISKS!
 # This is the EFI installer.
 # Also, make sure to download the latest !! OPENRC !! stage3 file.
+#!/bin/bash
 
-printf "Did you mount the root and efi partitions? (Y/n): "
+printf "Did you mount the root and efi partitions? (y/n): "
 read confirm
-case "$confirm" in
-    [nN]*) exit 1 ;;
-    *) echo "Proceeding..." ;;
-esac
+if [[ "$confirm" != "y" ]]; then
+    exit 1
+fi
 
 links https://www.gentoo.org/downloads/mirrors
 tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
