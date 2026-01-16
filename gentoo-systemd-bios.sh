@@ -5,7 +5,7 @@
 #!/bin/bash
 set -e
 
-echo ">>> Ensure MBR/dos label and Bootable flag are set on /dev/sda."
+echo ">>> Ensure your root partition is marked as 'Bootable' in fdisk/cfdisk and that its MBR."
 sleep 3
 
 # ----------------------------------------------------------
