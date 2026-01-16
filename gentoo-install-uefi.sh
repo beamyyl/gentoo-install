@@ -47,3 +47,4 @@ chroot /mnt/gentoo /bin/bash -c 'exit'
 echo 'Choose a password for the ROOT account:'
 chroot /mnt/gentoo /bin/bash -c 'passwd'
 echo 'The installation is finished. You can chroot into the OS to do changes, or you can just reboot.'
+
