@@ -3,92 +3,127 @@
 # This is the EFI installer.
 # Also, make sure to download the latest !! OPENRC !! stage3 file.
 #!/bin/bash
-# Gentoo EFI Auto-Installer (OpenRC)
-# Modified for LiveGUI environment
+set -e
 
-GENTOO="/mnt/gentoo"
+# ==========================================================
+# Gentoo EFI Install Script (LiveGUI, OpenRC)
+# Originally by beamyyl, fixed & recreated
+# ==========================================================
 
-echo "Checking environment..."
-if [[ ! -d "$GENTOO/etc" ]]; then
-    echo "Error: /mnt/gentoo is not populated. Please mount your partitions first!"
-    exit 1
-fi
+echo ">>> Make sure disks are partitioned and mounted to /mnt/gentoo"
+sleep 2
 
-# 1. Download Stage 3 (Automated for OpenRC)
-echo "Downloading latest Stage 3 tarball..."
-cd $GENTOO
-STAGE3_URL=$(curl -s https://www.gentoo.org/downloads/mirrors/ | grep -oP 'https?://[^\"]+stage3-amd64-openrc-[0-9TZ]+.tar.xz' | head -n 1)
-# Fallback if the regex fails due to site changes
-if [ -z "$STAGE3_URL" ]; then
-    echo "Manual download required. Opening mirrors..."
-    links https://www.gentoo.org/downloads/mirrors/
-else
-    wget "$STAGE3_URL"
-fi
+# ----------------------------------------------------------
+# Download stage3 (manual step reminder)
+# ----------------------------------------------------------
+echo ">>> Select a mirror and download the latest OpenRC stage3"
+links https://www.gentoo.org/downloads/mirrors
 
-# 2. Extract Tarball
-echo "Extracting stage3..."
-tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner -C $GENTOO
+# ----------------------------------------------------------
+# Extract stage3
+# ----------------------------------------------------------
+tar xpvf stage3-*.tar.xz \
+  --xattrs-include='*.*' \
+  --numeric-owner \
+  -C /mnt/gentoo
 
-# 3. Configure Portage & Binary Packages
-echo "Configuring Portage..."
-cat <<EOF >> $GENTOO/etc/portage/make.conf
-EMERGE_DEFAULT_OPTS="\${EMERGE_DEFAULT_OPTS} --getbinpkg --ask=n"
+# ----------------------------------------------------------
+# Binary packages
+# ----------------------------------------------------------
+cat <<EOF >> /mnt/gentoo/etc/portage/make.conf
+EMERGE_DEFAULT_OPTS="\${EMERGE_DEFAULT_OPTS} --getbinpkg"
 FEATURES="getbinpkg"
-ACCEPT_LICENSE="*"
-VIDEO_CARDS="amdgpu radeon nouveau intel"
 EOF
 
-# 4. Prepare Chroot Environment
-cp --dereference /etc/resolv.conf $GENTOO/etc/
-mount --types proc /proc $GENTOO/proc
-mount --rbind /sys $GENTOO/sys
-mount --make-rslave $GENTOO/sys
-mount --rbind /dev $GENTOO/dev
-mount --make-rslave $GENTOO/dev
-mount --bind /run $GENTOO/run
-mount --make-slave $GENTOO/run
+# ----------------------------------------------------------
+# DNS
+# ----------------------------------------------------------
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 
-# 5. Execution within Chroot
-echo "Entering Chroot for system configuration..."
-chroot $GENTOO /bin/bash <<'EOF'
+# ----------------------------------------------------------
+# Mount pseudo-filesystems
+# ----------------------------------------------------------
+mount -t proc /proc /mnt/gentoo/proc
+mount --rbind /sys /mnt/gentoo/sys
+mount --make-rslave /mnt/gentoo/sys
+mount --rbind /dev /mnt/gentoo/dev
+mount --make-rslave /mnt/gentoo/dev
+mount --bind /run /mnt/gentoo/run
+mount --make-rslave /mnt/gentoo/run
+
+# ----------------------------------------------------------
+# Enter chroot commands
+# ----------------------------------------------------------
+chroot /mnt/gentoo /bin/bash <<'EOF'
 source /etc/profile
-export PS1="(chroot) $PS1"
+export PS1="(gentoo) ${PS1}"
 
-# Sync and Portage tools
+# Sync portage
 emerge-webrsync
-emerge --oneshot app-portage/mirrorselect app-portage/cpuid2cpuflags sys-kernel/genfstab
+emerge --sync --quiet
 
-# Optimization
+# Mirrors
+emerge -gv --oneshot app-portage/mirrorselect
+mirrorselect -i -o >> /etc/portage/make.conf
+
+# CPU flags
+emerge -gv --oneshot app-portage/cpuid2cpuflags
+mkdir -p /etc/portage/package.use
 echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 
-# System Update (Using Binaries)
-emerge --update --deep --newuse @world
+# World update (binary)
+emerge -vquDU --getbinpkg @world
 
-# Kernel and Firmware
-emerge sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
+# Firmware & kernel
+emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware
+emerge -qv sys-kernel/gentoo-kernel-bin
 
-# Fstab and Networking
+# fstab
+emerge -qv sys-fs/genfstab
 genfstab -U / >> /etc/fstab
+
+# Hostname
 echo "gentoo" > /etc/hostname
-emerge networkmanager sys-process/cronie vim nano
+
+# Networking
+emerge -qv net-misc/networkmanager
 rc-update add NetworkManager default
+
+# Utilities
+emerge -qv vim nano
+emerge -qv sys-process/cronie
 rc-update add cronie default
 
+# ----------------------------------------------------------
 # Bootloader (EFI)
+# ----------------------------------------------------------
 echo 'GRUB_PLATFORMS="efi-64"' >> /etc/portage/make.conf
-emerge --newuse sys-boot/grub:2 sys-boot/efibootmgr
 
-# Standard EFI Install
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Gentoo
+emerge -qv \
+  sys-boot/grub \
+  sys-boot/shim \
+  sys-boot/mokutil \
+  sys-boot/efibootmgr
+
+grub-install \
+  --target=x86_64-efi \
+  --efi-directory=/boot/efi \
+  --bootloader-id=Gentoo
+
 grub-mkconfig -o /boot/grub/grub.cfg
 
+# Environment
 env-update
 EOF
 
-# 6. Finalization
-echo "------------------------------------------------"
-echo "Set the ROOT password:"
-chroot $GENTOO /bin/bash -c "passwd"
+# ----------------------------------------------------------
+# Root password
+# ----------------------------------------------------------
+echo ">>> Set root password"
+chroot /mnt/gentoo passwd
 
-echo "Installation complete. Unmount and reboot!"
+echo "=================================================="
+echo " Gentoo installation complete."
+echo " You may reboot or chroot back in to continue."
+echo "=================================================="
+
