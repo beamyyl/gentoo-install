@@ -84,10 +84,6 @@ emerge -qvquDU --getbinpkg @world
 # Firmware & kernel
 emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
 
-# fstab
-emerge -qv sys-fs/genfstab
-genfstab -U / >> /etc/fstab
-
 # Hostname
 echo "gentoo" > /etc/hostname
 
