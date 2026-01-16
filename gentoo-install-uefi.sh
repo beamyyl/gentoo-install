@@ -42,7 +42,7 @@ echo 'ACCEPT_LICENSE="*"' >> /mnt/gentoo/etc/portage/make.conf
 # ----------------------------------------------------------
 
 echo ">>> Generating fstab..."
-genfstab -U /mnt/gentoo >> /mnt/gentoo/etc/fstab
+genfstab -U /mnt/gentoo > /mnt/gentoo/etc/fstab
 
 # ----------------------------------------------------------
 # Enter chroot
