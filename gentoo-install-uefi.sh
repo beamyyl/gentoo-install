@@ -1,6 +1,6 @@
 # ----------------------------------------------------------
 # made by beamyyl
-# This is the EFI installer.
+# This is the UEFI installer.
 # ----------------------------------------------------------
 #!/bin/bash
 set -e
