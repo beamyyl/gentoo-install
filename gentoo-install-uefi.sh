@@ -2,10 +2,13 @@
 # MAKE SURE TO MOUNT EVERYTHING TO /mnt/gentoo AND ALREADY CONFIGURE THE DISKS!
 # This is the EFI installer.
 # Also, make sure to download the latest !! OPENRC !! stage3 file.
-read -p "Did you mount the root and efi partitions? (Y/n): " confirm
-if [[ $confirm == [nN] ]]; then
-    exit 1
-fi
+
+printf "Did you mount the root and efi partitions? (Y/n): "
+read confirm
+case "$confirm" in
+    [nN]*) exit 1 ;;
+    *) echo "Proceeding..." ;;
+esac
 
 links https://www.gentoo.org/downloads/mirrors
 tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
@@ -18,16 +21,16 @@ mount --make-rslave /mnt/gentoo/dev
 mount --bind /run /mnt/gentoo/run
 mount --make-slave /mnt/gentoo/run
 
-chroot /mnt/gentoo /bin/bash <<EOF
+chroot /mnt/gentoo /bin/bash <<'EOF'
 source /etc/profile
-echo 'EMERGE_DEFAULT_OPTS="\${EMERGE_DEFAULT_OPTS} --getbinpkg"' >> /etc/portage/make.conf
+echo 'EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS} --getbinpkg"' >> /etc/portage/make.conf
 echo 'FEATURES="getbinpkg"' >> /etc/portage/make.conf
 emerge-webrsync
 emerge -gv --oneshot app-portage/mirrorselect
 mirrorselect -i -o >> /etc/portage/make.conf
 emerge --sync --quiet
 emerge -gv --oneshot app-portage/cpuid2cpuflags
-echo "*/* \$(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
+echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 emerge --verbose --quiet --update --deep --newuse --getbinpkg @world
 emerge -gvq sys-kernel/linux-firmware sys-firmware/sof-firmware
 emerge -gvuq sys-kernel/gentoo-kernel-bin
