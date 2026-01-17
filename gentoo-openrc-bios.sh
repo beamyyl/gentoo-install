@@ -65,6 +65,8 @@ emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo
 
 # System Essentials
 echo "gentoo" > /etc/hostname
+emerge -qv sys-auth/elogind
+rc-update add elogind default
 rc-update add dbus default
 emerge -qv net-misc/networkmanager sys-process/cronie vim nano
 rc-update add NetworkManager default
