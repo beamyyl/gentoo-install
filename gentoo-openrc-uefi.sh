@@ -75,10 +75,10 @@ mkdir -p /etc/portage/package.use
 echo 'sys-kernel/installkernel dracut' >> /etc/portage/package.use/00installkernel
 emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
 
-# Hostname
+# Hostname + Essentials
 echo "gentoo" > /etc/hostname
-
-# Networking
+emerge -qv sys-auth/elogind
+rc-update add elogind default
 rc-update add dbus default
 emerge -qv net-misc/networkmanager
 rc-update add NetworkManager default
