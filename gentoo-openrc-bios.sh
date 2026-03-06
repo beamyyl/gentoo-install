@@ -49,8 +49,7 @@ emerge-webrsync
 emerge --sync --quiet
 
 # Optimizations
-emerge -qgv --oneshot app-portage/mirrorselect app-portage/cpuid2cpuflags
-mirrorselect -i -o >> /etc/portage/make.conf
+emerge -qgv --oneshot app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
 echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 
