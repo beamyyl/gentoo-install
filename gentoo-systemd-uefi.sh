@@ -57,10 +57,6 @@ emaint binhost --sync
 getuto
 emerge --sync --quiet
 
-# Mirrors
-emerge -qgv --oneshot app-portage/mirrorselect
-mirrorselect -i -o >> /etc/portage/make.conf
-
 # CPU flags
 emerge -gqv --oneshot app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
