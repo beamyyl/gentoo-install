@@ -4,6 +4,7 @@ set -e
 # ----------------------------------------------------------
 # made by beamyyl
 # This is the BIOS/MBR installer.
+# RECOMMENDED FOR QEMU!!
 # ----------------------------------------------------------
 
 echo ">>> Ensure your root partition is marked as 'Bootable' in fdisk/cfdisk and that its mounted to /mnt/gentoo."
@@ -75,7 +76,7 @@ emerge -qv sys-boot/grub
 
 # Install to the Master Boot Record of the drive
 # Ensure /dev/sda is your correct VM disk
-grub-install --target=i386-pc /dev/sda
+grub-install --target=i386-pc /dev/vda
 
 # Generate the config
 grub-mkconfig -o /boot/grub/grub.cfg
