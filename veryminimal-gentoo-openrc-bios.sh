@@ -26,9 +26,10 @@ cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 # ----------------------------------------------------------
 # Portage Configuration
 # ----------------------------------------------------------
-echo 'EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS} --getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
+echo 'EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS} --getbinpkg --jobs=2 --load-average=3"' >> /mnt/gentoo/etc/portage/make.conf
 echo 'FEATURES="getbinpkg"' >> /mnt/gentoo/etc/portage/make.conf
 echo 'ACCEPT_LICENSE="*"' >> /mnt/gentoo/etc/portage/make.conf
+echo 'MAKEOPTS="-j2 -l3"' >> /mnt/gentoo/etc/portage/make.conf
 
 # ----------------------------------------------------------
 # FSTAB Generation
