@@ -15,7 +15,7 @@ sleep 3
 echo ">>> Select a mirror and download the latest OpenRC stage3"
 links https://www.gentoo.org/downloads/
 
-tar xpvf stage3-*.tar.xz \
+tar xpf stage3-*.tar.xz \
   --xattrs-include='*.*' \
   --numeric-owner \
   -C /mnt/gentoo
