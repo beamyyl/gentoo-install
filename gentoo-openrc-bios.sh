@@ -44,7 +44,6 @@ export PS1="(gentoo) ${PS1}"
 
 # Syncing
 getuto
-emaint binhost --sync
 emerge-webrsync
 emerge --sync --quiet
 
@@ -67,9 +66,8 @@ echo "gentoo" > /etc/hostname
 emerge -qv sys-auth/elogind
 rc-update add elogind default
 rc-update add dbus default
-emerge -qv net-misc/networkmanager sys-process/cronie vim nano
+emerge -qv net-misc/networkmanager vim nano
 rc-update add NetworkManager default
-rc-update add cronie default
 
 # ----------------------------------------------------------
 # GRUB for BIOS/MBR
