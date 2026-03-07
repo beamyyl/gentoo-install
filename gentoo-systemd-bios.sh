@@ -17,7 +17,7 @@ links https://www.gentoo.org/downloads/
 # ----------------------------------------------------------
 # Extract stage3
 # ----------------------------------------------------------
-tar xpvf stage3-*-systemd-*.tar.xz \
+tar xpf stage3-*-systemd-*.tar.xz \
   --xattrs-include='*.*' \
   --numeric-owner \
   -C /mnt/gentoo
@@ -42,8 +42,6 @@ source /etc/profile
 export PS1="(systemd-bios) ${PS1}"
 
 # Sync
-getuto
-emaint binhost --sync
 emerge-webrsync
 emerge --sync --quiet
 
@@ -69,8 +67,7 @@ emerge -qv net-misc/networkmanager
 systemctl enable NetworkManager
 
 # Utilities
-emerge -qv vim nano sys-process/cronie
-systemctl enable cronie
+emerge -qv vim nano
 
 # ----------------------------------------------------------
 # Bootloader (BIOS)
