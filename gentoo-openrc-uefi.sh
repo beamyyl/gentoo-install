@@ -17,7 +17,7 @@ links https://www.gentoo.org/downloads/
 # ----------------------------------------------------------
 # Extract stage3
 # ----------------------------------------------------------
-tar xpvf stage3-*.tar.xz \
+tar xpf stage3-*.tar.xz \
   --xattrs-include='*.*' \
   --numeric-owner \
   -C /mnt/gentoo
@@ -53,9 +53,6 @@ export PS1="(gentoo) ${PS1}"
 
 # Sync portage
 emerge-webrsync
-emaint binhost --sync
-emerge-webrsync
-getuto
 emerge --sync --quiet
 
 # CPU flags
@@ -81,8 +78,6 @@ rc-update add NetworkManager default
 
 # Utilities
 emerge -qv vim nano
-emerge -qv sys-process/cronie
-rc-update add cronie default
 
 # ----------------------------------------------------------
 # Bootloader (EFI)
