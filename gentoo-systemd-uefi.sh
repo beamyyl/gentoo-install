@@ -52,6 +52,7 @@ source /etc/profile
 export PS1="(systemd) ${PS1}"
 
 # Sync portage
+getuto
 emerge-webrsync
 emerge --sync --quiet
 
