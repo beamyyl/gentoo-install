@@ -42,6 +42,7 @@ source /etc/profile
 export PS1="(systemd-bios) ${PS1}"
 
 # Sync
+getuto
 emerge-webrsync
 emerge --sync --quiet
 
