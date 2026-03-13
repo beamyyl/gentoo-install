@@ -52,10 +52,8 @@ source /etc/profile
 export PS1="(gentoo) ${PS1}"
 
 # Sync portage
-emerge-webrsync
-emaint binhost --sync
-emerge-webrsync
 getuto
+emerge-webrsync
 emerge --sync --quiet
 
 # CPU flags
