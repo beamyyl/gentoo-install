@@ -121,7 +121,7 @@ TARBALL=$(ls /mnt/gentoo/stage3-amd64-*.tar.xz 2>/dev/null | head -n1)
 
 info "Found: $(basename "$TARBALL")"
 info "Extracting..."
-tar xpvf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
+tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
 rm -f "$TARBALL"
 info "Stage3 extracted."
 echo ""
