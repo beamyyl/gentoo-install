@@ -1,7 +1,3 @@
-# ----------------------------------------------------------
-# made by beamyyl
-# This is the UEFI installer.
-# ----------------------------------------------------------
 #!/bin/bash
 set -e
 
@@ -57,35 +53,35 @@ emerge-webrsync
 emerge --sync --quiet
 
 # CPU flags
-emerge -gqv --oneshot app-portage/cpuid2cpuflags
+emerge -gq --oneshot app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
 echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 
 # World update (binary)
-emerge -qvquDU --getbinpkg @world
+emerge -quDU --getbinpkg @world
 
 # Firmware & kernel
 mkdir -p /etc/portage/package.use
 echo 'sys-kernel/installkernel dracut' >> /etc/portage/package.use/00installkernel
-emerge -qv sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
+emerge -q sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
 
 # Hostname + Essentials
 echo "gentoo" > /etc/hostname
-emerge -qv sys-auth/elogind
+emerge -q sys-auth/elogind dbus
 rc-update add elogind default
 rc-update add dbus default
-emerge -qv net-misc/networkmanager
+emerge -q net-misc/networkmanager
 rc-update add NetworkManager default
 
 # Utilities
-emerge -qv vim nano
+emerge -q vim nano
 
 # ----------------------------------------------------------
 # Bootloader (EFI)
 # ----------------------------------------------------------
 echo 'GRUB_PLATFORMS="efi-64"' >> /etc/portage/make.conf
 
-emerge -qv \
+emerge -q \
   sys-boot/grub \
   sys-boot/shim \
   sys-boot/mokutil \
