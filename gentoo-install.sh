@@ -266,7 +266,7 @@ info "CPU flags written to /etc/portage/package.use/00cpu-flags"
 # Firmware (open source only)
 # ---------------------------------------------------------------------------
 info "Installing linux-firmware..."
-echo 'ACCEPT_LICENSE="*"' >> /mnt/gentoo/etc/portage/make.conf
+echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
 emerge --ask=n sys-kernel/linux-firmware
 
 info "Installing SOF firmware..."
