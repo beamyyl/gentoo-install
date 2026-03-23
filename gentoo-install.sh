@@ -2,9 +2,6 @@
 # =============================================================================
 # Gentoo Auto-Installer
 # Target: amd64, UEFI/GPT, desktop/openrc profile
-#         gentoo-kernel-bin, binpkgs, NetworkManager
-# Requirements: Run from official Gentoo live ISO
-#               (arch-chroot, genfstab, links must be available)
 # =============================================================================
 
 set -e
@@ -150,36 +147,7 @@ info "make.conf updated."
 echo ""
 
 # =============================================================================
-# STEP 5 — Binary package host
-# =============================================================================
-info "============================================================"
-info " CONFIGURING BINHOST"
-info "============================================================"
-
-mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
-
-cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoobinhost.conf <<'EOF'
-# Fallback: plain x86-64
-[gentoo]
-priority = 9959
-sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64/
-verify-signature = true
-location = /var/cache/binhost/gentoo
-
-# Preferred: x86-64-v3 (Haswell/Ryzen and newer)
-# If your CPU does not support x86-64-v3, remove or comment this section.
-[gentoo-x86-64-v3]
-priority = 9999
-sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3/
-verify-signature = true
-location = /var/cache/binhost/gentoo-x86-64-v3
-EOF
-
-info "Binhost configured."
-echo ""
-
-# =============================================================================
-# STEP 6 — package.use
+# STEP 5 — package.use
 # =============================================================================
 info "============================================================"
 info " CONFIGURING package.use"
@@ -200,7 +168,7 @@ info "package.use written."
 echo ""
 
 # =============================================================================
-# STEP 7 — DNS, pseudo-filesystems, genfstab
+# STEP 6 — DNS, pseudo-filesystems, genfstab
 # =============================================================================
 info "============================================================"
 info " MOUNTING PSEUDO-FILESYSTEMS & GENERATING FSTAB"
@@ -223,7 +191,7 @@ cat /mnt/gentoo/etc/fstab
 echo ""
 
 # =============================================================================
-# STEP 8 — Build in-chroot script (variables expanded now, heredoc body is not)
+# STEP 7 — Build in-chroot script (variables expanded now, heredoc body is not)
 # =============================================================================
 info "============================================================"
 info " WRITING IN-CHROOT SCRIPT"
@@ -414,7 +382,7 @@ info "In-chroot script written."
 echo ""
 
 # =============================================================================
-# STEP 9 — arch-chroot
+# STEP 8 — arch-chroot
 # =============================================================================
 info "============================================================"
 info " ENTERING CHROOT"
@@ -425,7 +393,7 @@ arch-chroot /mnt/gentoo /bin/bash -c \
     "source /etc/profile && export PS1='(chroot) \${PS1}' && /root/chroot-install.sh"
 
 # =============================================================================
-# STEP 10 — Cleanup
+# STEP 9 — Cleanup
 # =============================================================================
 info "============================================================"
 info " CLEANUP"
