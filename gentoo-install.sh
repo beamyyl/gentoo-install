@@ -256,11 +256,11 @@ env-update && source /etc/profile
 # ---------------------------------------------------------------------------
 info "Detecting CPU flags with cpuid2cpuflags..."
 emerge --ask=n app-portage/cpuid2cpuflags
-CPU_FLAGS=\$(cpuid2cpuflags)
-info "Detected flags: \${CPU_FLAGS}"
-echo "" >> /etc/portage/make.conf
-echo "# CPU-specific flags (auto-detected)" >> /etc/portage/make.conf
-echo "\${CPU_FLAGS}" >> /etc/portage/make.conf
+
+mkdir -p /etc/portage/package.use
+echo "*/* \$(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
+
+info "CPU flags written to /etc/portage/package.use/00cpu-flags"
 
 # ---------------------------------------------------------------------------
 # Firmware (open source only)
