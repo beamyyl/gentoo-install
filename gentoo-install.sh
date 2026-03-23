@@ -2,6 +2,8 @@
 # =============================================================================
 # Gentoo Auto-Installer
 # Supports: UEFI or BIOS  |  OpenRC or systemd
+#           amd64, desktop profile, gentoo-kernel-bin, binpkgs
+# Requirements: Official Gentoo live ISO (arch-chroot, genfstab, links)
 # =============================================================================
 
 set -e
@@ -36,7 +38,7 @@ echo "  Recommended GPT/UEFI layout:"
 echo ""
 echo "    /dev/sda1  →  FAT32  →  EFI System Partition (512M–1G)"
 echo "    /dev/sda2  →  swap"
-echo "    /dev/sda3  →  ext4    →  root"
+echo "    /dev/sda3  →  xfs    →  root"
 echo ""
 echo "  Mount commands (UEFI):"
 echo ""
@@ -410,10 +412,7 @@ fi
 info "Installing sudo and vim..."
 emerge -q --ask=n app-admin/sudo app-editors/vim
 
-# Allow wheel group to use sudo
-echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
-chmod 440 /etc/sudoers.d/wheel
-info "Wheel group granted sudo access."
+info "sudo installed. Configure /etc/sudoers manually after booting with 'visudo'."
 
 # ---------------------------------------------------------------------------
 # GRUB
