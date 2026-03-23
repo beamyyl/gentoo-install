@@ -2,8 +2,6 @@
 # =============================================================================
 # Gentoo Auto-Installer
 # Supports: UEFI or BIOS  |  OpenRC or systemd
-#           amd64, desktop profile, gentoo-kernel-bin, binpkgs
-# Requirements: Official Gentoo live ISO (arch-chroot, genfstab, links)
 # =============================================================================
 
 set -e
@@ -38,7 +36,7 @@ echo "  Recommended GPT/UEFI layout:"
 echo ""
 echo "    /dev/sda1  →  FAT32  →  EFI System Partition (512M–1G)"
 echo "    /dev/sda2  →  swap"
-echo "    /dev/sda3  →  xfs    →  root"
+echo "    /dev/sda3  →  ext4    →  root"
 echo ""
 echo "  Mount commands (UEFI):"
 echo ""
