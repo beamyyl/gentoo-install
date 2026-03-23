@@ -231,10 +231,10 @@ info "package.use written."
 echo ""
 
 # =============================================================================
-# STEP 7 — Write hostname early (fixes livecd hostname leaking into chroot)
+# STEP 7 — Write hostname
 # =============================================================================
 echo "$NEW_HOSTNAME" > /mnt/gentoo/etc/hostname
-
+echo "hostname="$NEW_HOSTNAME"" > /mnt/gentoo/etc/conf.d/hostname
 cat > /mnt/gentoo/etc/hosts <<EOF
 127.0.0.1   localhost
 ::1         localhost
