@@ -63,6 +63,7 @@ emerge -quDU --getbinpkg @world
 # Firmware & kernel
 mkdir -p /etc/portage/package.use
 echo 'sys-kernel/installkernel dracut' >> /etc/portage/package.use/00installkernel
+emerge -q sys-kernel/dracut sys-kernel/gentoo-sources
 emerge -q sys-kernel/linux-firmware sys-firmware/sof-firmware sys-kernel/gentoo-kernel-bin
 
 # Hostname + Essentials
