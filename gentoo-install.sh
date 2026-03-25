@@ -1,9 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# Gentoo Auto-Installer
-# Supports: UEFI or BIOS  |  OpenRC or systemd
-#           amd64, desktop profile, gentoo-kernel-bin, binpkgs
-# Requirements: Official Gentoo live ISO (arch-chroot, genfstab, links)
+# Gentoo Install script by Beamy
+# Supports: UEFI or BIOS + OpenRC or systemd
 # =============================================================================
 
 set -e
@@ -355,7 +353,7 @@ info "CPU flags written to /etc/portage/package.use/00cpu-flags:"
 cat /etc/portage/package.use/00cpu-flags
 
 # ---------------------------------------------------------------------------
-# Firmware (open source only)
+# Firmware
 # ---------------------------------------------------------------------------
 info "Installing linux-firmware..."
 echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
@@ -379,7 +377,7 @@ kernel_cmdline=" root=UUID=\${ROOT_UUID} "
 EOF
 
 # ---------------------------------------------------------------------------
-# Kernel (prebuilt binary)
+# Kernel
 # ---------------------------------------------------------------------------
 info "Installing gentoo-kernel-bin..."
 emerge -q --ask=n sys-kernel/gentoo-kernel-bin
@@ -397,7 +395,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Logging + cron  (OpenRC only; systemd has journald + systemd-cron options)
+# Logging + cron
 # ---------------------------------------------------------------------------
 if [ "\${INIT_SYSTEM}" = "openrc" ]; then
     info "Installing syslog-ng and cronie..."
@@ -411,9 +409,6 @@ fi
 # ---------------------------------------------------------------------------
 info "Installing sudo and vim..."
 emerge -q --ask=n app-admin/sudo app-editors/vim
-
-info "sudo installed. Configure /etc/sudoers manually after booting with 'visudo'."
-
 # ---------------------------------------------------------------------------
 # GRUB
 # ---------------------------------------------------------------------------
@@ -421,18 +416,18 @@ info "Installing GRUB..."
 emerge -q --ask=n sys-boot/grub
 
 if [ "\${BOOT_MODE}" = "uefi" ]; then
-    info "Running grub-install (UEFI, label: Gentoo)..."
-    grub-install --quiet --target=x86_64-efi --efi-directory=/efi --bootloader-id=Gentoo
+    info "Running grub-install (UEFI)..."
+    grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=Gentoo
 else
     info "Running grub-install (BIOS)..."
     # Install to the disk, not a partition — adjust /dev/sda if needed
     GRUB_DISK=\$(lsblk -no pkname \$(findmnt -n -o SOURCE /) | head -n1)
     [ -z "\$GRUB_DISK" ] && GRUB_DISK="sda"
-    grub-install --quiet /dev/\${GRUB_DISK}
+    grub-install /dev/\${GRUB_DISK}
 fi
 
 info "Generating grub.cfg..."
-grub-mkconfig -q -o /boot/grub/grub.cfg \
+grub-mkconfig -o /boot/grub/grub.cfg \
     || grub-mkconfig -o /boot/grub/grub.cfg
 
 # ---------------------------------------------------------------------------
