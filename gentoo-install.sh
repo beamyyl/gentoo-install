@@ -123,15 +123,6 @@ info " SYSTEM CONFIGURATION"
 info "============================================================"
 echo ""
 
-ask "Enter your timezone."
-ask "Example: America/Los_Angeles"
-ask "Full list: ls /usr/share/zoneinfo/"
-read -rp "  Timezone: " TIMEZONE
-[ -z "$TIMEZONE" ] && die "Timezone cannot be empty."
-[ -f "/usr/share/zoneinfo/$TIMEZONE" ] \
-    || die "Invalid timezone '$TIMEZONE'. Check /usr/share/zoneinfo/."
-echo ""
-
 ask "Enter a hostname for your new system."
 ask "This is the name your machine will go by on the network (e.g. 'gentoo-desktop')."
 read -rp "  Hostname: " NEW_HOSTNAME
@@ -146,7 +137,6 @@ echo ""
 info "Configuration summary:"
 echo "   Boot mode : $BOOT_MODE"
 echo "   Init      : $INIT_SYSTEM"
-echo "   Timezone  : $TIMEZONE"
 echo "   Hostname  : $NEW_HOSTNAME"
 echo "   Locale    : $LOCALE"
 echo ""
@@ -292,7 +282,6 @@ warn()  { echo -e "\${YELLOW}[CHROOT]\${NC}  \$*"; }
 
 BOOT_MODE="${BOOT_MODE}"
 INIT_SYSTEM="${INIT_SYSTEM}"
-TIMEZONE="${TIMEZONE}"
 NEW_HOSTNAME="${NEW_HOSTNAME}"
 LOCALE="${LOCALE}"
 GRUB_DISK="${GRUB_DISK}"
@@ -335,13 +324,6 @@ eselect profile show
 # ---------------------------------------------------------------------------
 info "Initialising binary package keyring..."
 getuto -q 2>/dev/null || getuto
-
-# ---------------------------------------------------------------------------
-# Timezone
-# ---------------------------------------------------------------------------
-info "Setting timezone: \${TIMEZONE}"
-echo "\${TIMEZONE}" > /etc/timezone
-emerge -q --config sys-libs/timezone-data
 
 # ---------------------------------------------------------------------------
 # Locale
@@ -443,7 +425,7 @@ grub-mkconfig -o /boot/grub/grub.cfg \
 # ---------------------------------------------------------------------------
 if [ "\${INIT_SYSTEM}" = "systemd" ]; then
     info "Running systemd-firstboot..."
-    systemd-firstboot --timezone="\${TIMEZONE}" --hostname="\${NEW_HOSTNAME}" --locale="\${LOCALE}"
+    systemd-firstboot --hostname="\${NEW_HOSTNAME}" --locale="\${LOCALE}"
 fi
 
 # ---------------------------------------------------------------------------
