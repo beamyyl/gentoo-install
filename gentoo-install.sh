@@ -45,11 +45,19 @@ echo "    mkdir -p /mnt/gentoo/efi"
 echo "    mount /dev/sda1 /mnt/gentoo/efi"
 echo "    swapon /dev/sda2"
 echo ""
-echo "  For BIOS/MBR, /dev/sda1 is your /boot (ext4), no EFI partition needed:"
+echo "  For BIOS/GPT, you MUST have a 1MB BIOS BOOT partition (type: BIOS boot)."
+echo "  Do NOT format or mount it — GRUB finds it automatically."
 echo ""
-echo "    mount /dev/sda2 /mnt/gentoo"
+echo "    /dev/sda1  →  (unformatted, 1MB)  →  BIOS BOOT partition"
+echo "    /dev/sda2  →  ext4               →  /boot"
+echo "    /dev/sda3  →  swap"
+echo "    /dev/sda4  →  xfs                →  root"
+echo ""
+echo "  Mount commands (BIOS):"
+echo ""
+echo "    mount /dev/sda4 /mnt/gentoo"
 echo "    mkdir -p /mnt/gentoo/boot"
-echo "    mount /dev/sda1 /mnt/gentoo/boot"
+echo "    mount /dev/sda2 /mnt/gentoo/boot"
 echo "    swapon /dev/sda3"
 echo ""
 warn "If your partitions are NOT yet mounted, press Ctrl+C now,"
@@ -89,6 +97,13 @@ else
     mountpoint -q /mnt/gentoo/boot \
         || die "/mnt/gentoo/boot is not mounted. Mount your boot partition and re-run."
     info "BIOS mode selected. /boot mount verified."
+    echo ""
+    ask "Enter the disk to install GRUB to (e.g. /dev/sda, /dev/vda, /dev/nvme0n1)."
+    ask "This should be the whole disk, NOT a partition."
+    read -rp "  Install disk: " GRUB_DISK
+    [ -z "$GRUB_DISK" ] && die "Disk cannot be empty."
+    [ -b "$GRUB_DISK" ] || die "'$GRUB_DISK' is not a valid block device."
+    info "GRUB will be installed to: $GRUB_DISK"
 fi
 echo ""
 
@@ -285,6 +300,7 @@ INIT_SYSTEM="${INIT_SYSTEM}"
 TIMEZONE="${TIMEZONE}"
 NEW_HOSTNAME="${NEW_HOSTNAME}"
 LOCALE="${LOCALE}"
+GRUB_DISK="${GRUB_DISK}"
 
 # ---------------------------------------------------------------------------
 # Portage snapshot
@@ -419,11 +435,8 @@ if [ "\${BOOT_MODE}" = "uefi" ]; then
     info "Running grub-install (UEFI)..."
     grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=Gentoo
 else
-    info "Running grub-install (BIOS)..."
-    # Install to the disk, not a partition — adjust /dev/sda if needed
-    GRUB_DISK=\$(lsblk -no pkname \$(findmnt -n -o SOURCE /) | head -n1)
-    [ -z "\$GRUB_DISK" ] && GRUB_DISK="sda"
-    grub-install /dev/\${GRUB_DISK}
+    info "Running grub-install (BIOS) to \${GRUB_DISK}..."
+    grub-install "\${GRUB_DISK}"
 fi
 
 info "Generating grub.cfg..."
