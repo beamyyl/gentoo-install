@@ -1,1 +1,1 @@
-I made an auto gentoo installer lol
+I made an auto gentoo installer from scratch because others suck!!!
