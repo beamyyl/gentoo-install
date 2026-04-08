@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Gentoo Install script by Beamy
+# A better Gentoo Install Script
 # Supports: UEFI or BIOS + OpenRC or systemd
 # =============================================================================
 
