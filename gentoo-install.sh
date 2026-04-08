@@ -13,7 +13,7 @@ die()   { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 ask()   { echo -e "${CYAN}[INPUT]${NC} $*"; }
 
 # =============================================================================
-# STEP 0 — Sanity checks
+# Sanity checks
 # =============================================================================
 for cmd in arch-chroot genfstab links; do
     command -v "$cmd" &>/dev/null \
@@ -21,23 +21,18 @@ for cmd in arch-chroot genfstab links; do
 done
 
 # =============================================================================
-# STEP 1 — Banner + partition reminder
+# Reminders
 # =============================================================================
 clear
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║            GENTOO AUTO-INSTALLER — amd64                 ║${NC}"
+echo -e "${CYAN}║            GENTOO INSTALLER                                        ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 info "This script will install Gentoo to /mnt/gentoo."
 info "Your partitions must be formatted and mounted BEFORE continuing."
 echo ""
-echo "  Recommended GPT/UEFI layout:"
-echo ""
-echo "    /dev/sda1  →  FAT32  →  EFI System Partition (512M–1G)"
-echo "    /dev/sda2  →  swap"
-echo "    /dev/sda3  →  xfs    →  root"
-echo ""
+echo "Here are some partition examples:"
 echo "  Mount commands (UEFI):"
 echo ""
 echo "    mount /dev/sda3 /mnt/gentoo"
@@ -45,12 +40,9 @@ echo "    mkdir -p /mnt/gentoo/efi"
 echo "    mount /dev/sda1 /mnt/gentoo/efi"
 echo "    swapon /dev/sda2"
 echo ""
-echo "  For BIOS/GPT, you MUST have a 1MB BIOS BOOT partition (type: BIOS boot)."
-echo "  Do NOT format or mount it — GRUB finds it automatically."
+echo "  For BIOS/GPT, you MUST have a 1MB BIOS BOOT partition."
+echo "  Do NOT format or mount it."
 echo ""
-echo "    /dev/sda1  →  (unformatted, 1MB)  →  BIOS BOOT partition"
-echo "    /dev/sda2  →  swap"
-echo "    /dev/sda3  →  xfs                →  root"
 echo ""
 echo "  Mount commands (BIOS):"
 echo ""
@@ -144,7 +136,7 @@ read -rp "  Press ENTER to continue..."
 echo ""
 
 # =============================================================================
-# STEP 4 — Stage3 download via Links
+# STEP 4 — Stage3
 # =============================================================================
 info "============================================================"
 info " STAGE3 DOWNLOAD"
@@ -159,8 +151,6 @@ else
     info "Download: stage3-amd64-desktop-systemd-*.tar.xz"
 fi
 
-info "The file will be saved to your current directory (/mnt/gentoo)."
-echo ""
 warn "When the download finishes, press 'q' to quit Links."
 echo ""
 read -rp "  Press ENTER to open Links..."
@@ -215,7 +205,6 @@ if [ "$BOOT_MODE" = "uefi" ]; then
     echo "sys-kernel/installkernel grub dracut" \
         > /mnt/gentoo/etc/portage/package.use/installkernel
 else
-    # BIOS: grub still used but no EFI stub needed; dracut still good
     echo "sys-kernel/installkernel grub dracut" \
         > /mnt/gentoo/etc/portage/package.use/installkernel
 fi
@@ -229,7 +218,7 @@ info "package.use written."
 echo ""
 
 # =============================================================================
-# STEP 7 — Write hostname
+# STEP 7 — Hostname
 # =============================================================================
 echo "$NEW_HOSTNAME" > /mnt/gentoo/etc/hostname
 echo "hostname="$NEW_HOSTNAME"" > /mnt/gentoo/etc/conf.d/hostname
@@ -243,7 +232,7 @@ info "Hostname written to /mnt/gentoo/etc/hostname: $NEW_HOSTNAME"
 echo ""
 
 # =============================================================================
-# STEP 8 — DNS, pseudo-filesystems, genfstab
+# STEP 8 — Mounting
 # =============================================================================
 info "============================================================"
 info " PSEUDO-FILESYSTEMS & FSTAB"
@@ -259,14 +248,14 @@ mount --make-rslave          /mnt/gentoo/dev
 mount --bind        /run     /mnt/gentoo/run
 mount --make-slave           /mnt/gentoo/run
 
-info "Generating /etc/fstab with genfstab -U..."
+info "Generating /etc/fstab..."
 genfstab -U /mnt/gentoo >> /mnt/gentoo/etc/fstab
 info "fstab contents:"
 cat /mnt/gentoo/etc/fstab
 echo ""
 
 # =============================================================================
-# STEP 9 — Build in-chroot script
+# STEP 9 — setting up chroot
 # =============================================================================
 info "============================================================"
 info " WRITING IN-CHROOT SCRIPT"
@@ -289,7 +278,6 @@ GRUB_DISK="${GRUB_DISK}"
 # ---------------------------------------------------------------------------
 # Portage snapshot
 # ---------------------------------------------------------------------------
-info "Fetching portage snapshot..."
 emerge-webrsync -q
 
 # ---------------------------------------------------------------------------
@@ -338,7 +326,6 @@ env-update && source /etc/profile
 # ---------------------------------------------------------------------------
 # CPU flags
 # ---------------------------------------------------------------------------
-info "Detecting CPU flags with cpuid2cpuflags..."
 emerge -q --ask=n app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
 echo "*/* \$(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
@@ -348,18 +335,14 @@ cat /etc/portage/package.use/00cpu-flags
 # ---------------------------------------------------------------------------
 # Firmware
 # ---------------------------------------------------------------------------
-info "Installing linux-firmware..."
 echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
 emerge -q --ask=n sys-kernel/linux-firmware
-
-info "Installing SOF firmware..."
 emerge -q --ask=n sys-firmware/sof-firmware \
     || warn "sof-firmware not available, skipping."
 
 # ---------------------------------------------------------------------------
 # installkernel + dracut config
 # ---------------------------------------------------------------------------
-info "Installing installkernel..."
 emerge -q --ask=n sys-kernel/installkernel
 
 info "Configuring dracut..."
@@ -398,9 +381,8 @@ if [ "\${INIT_SYSTEM}" = "openrc" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# sudo + vim
+# Utilities
 # ---------------------------------------------------------------------------
-info "Installing sudo and vim..."
 emerge -q --ask=n app-admin/sudo app-editors/vim
 # ---------------------------------------------------------------------------
 # GRUB
@@ -480,7 +462,7 @@ info "In-chroot script written."
 echo ""
 
 # =============================================================================
-# STEP 10 — arch-chroot
+# STEP 10 — chroot
 # =============================================================================
 info "============================================================"
 info " ENTERING CHROOT"
@@ -499,8 +481,7 @@ info "============================================================"
 rm -f /mnt/gentoo/root/chroot-install.sh
 
 info "Unmounting filesystems..."
-umount -R /mnt/gentoo 2>/dev/null \
-    || warn "Some mounts may already be gone — that's fine."
+umount -R /mnt/gentoo 2>/dev/null
 
 echo ""
 info "============================================================"
