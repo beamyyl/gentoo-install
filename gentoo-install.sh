@@ -388,7 +388,7 @@ emerge -q --ask=n app-admin/sudo app-editors/vim
 # GRUB
 # ---------------------------------------------------------------------------
 info "Installing GRUB..."
-emerge -q --ask=n sys-boot/grub
+emerge -q --ask=n sys-boot/grub --noreplace 
 
 if [ "\${BOOT_MODE}" = "uefi" ]; then
     info "Running grub-install (UEFI)..."
