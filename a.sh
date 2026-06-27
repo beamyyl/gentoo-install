@@ -2,5 +2,5 @@ emerge -q eselect-repository
 eselect repository add Miezhiko
 emaint sync -r Miezhiko
 echo '*/*::Miezhiko ~amd64' > /etc/portage/package.accept_keywords/Miezhiko
-echo 'gnome-base/*::Miezhiko -systemd -gnome-online-accounts elogind'
-emerge -q gnome-shell gnome-control-center gnome-settings-daemon
+echo 'gnome-base/*::Miezhiko systemd -gnome-online-accounts'
+emerge -q gnome-shell gnome-control-center gnome-settings-daemon::Miezhiko
