@@ -178,6 +178,11 @@ echo ""
 info "============================================================"
 info " CONFIGURING make.conf"
 info "============================================================"
+if [ "$BOOT_MODE" = "uefi" ]; then
+    TARGET_GRUB="efi-64"
+else
+    TARGET_GRUB="pc"
+fi
 
 cat >> /mnt/gentoo/etc/portage/make.conf <<EOF
 
@@ -186,7 +191,7 @@ FEATURES="\${FEATURES} getbinpkg"
 FEATURES="\${FEATURES} binpkg-request-signature"
 
 # GRUB platform
-GRUB_PLATFORMS="efi-64"
+GRUB_PLATFORMS="$TARGET_GRUB"
 EOF
 
 info "make.conf updated."
