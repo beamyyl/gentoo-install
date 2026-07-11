@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# A better Gentoo Install Script
+# The "best" Gentoo Install Script
 # Supports: UEFI or BIOS + OpenRC or systemd
 # =============================================================================
 
