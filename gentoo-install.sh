@@ -198,6 +198,25 @@ info "make.conf updated."
 echo ""
 
 # =============================================================================
+# Binrepo setup
+# =============================================================================
+info "============================================================"
+info " CONFIGURING BINREPOS"
+info "============================================================"
+mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
+
+cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<EOF
+
+[gentoo-x86-64v3]
+priority = 9999
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
+location = /var/cache/binhost/gentoo-x86-64-v3
+EOF
+
+info "binrepos.conf updated with x86-64v3 repository."
+echo ""
+
+# =============================================================================
 # package.use
 # =============================================================================
 info "============================================================"
