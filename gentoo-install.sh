@@ -193,7 +193,7 @@ FEATURES="\${FEATURES} binpkg-request-signature"
 # GRUB platform
 GRUB_PLATFORMS="$TARGET_GRUB"
 EOF
-# cat 'EMERGE_DEFAULT_OPTS="--jobs=6 --load-average=8"' >> /mnt/gentoo/etc/portage/make.conf 
+# echo 'EMERGE_DEFAULT_OPTS="--jobs=6 --load-average=8"' >> /mnt/gentoo/etc/portage/make.conf 
 
 info "make.conf updated."
 echo ""
