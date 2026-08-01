@@ -215,6 +215,7 @@ sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v
 location = /var/cache/binhost/gentoo-x86-64-v3
 
 # If future emerge throws signature errors:
+# (also you MUST run `sudo update-ca-certificates --fresh` IF using the bottom repos)
 #[gentoo]
 #priority = 1
 #sync-uri = https://distfiles-cdn-origin.gentoo.org/releases/amd64/binpackages/23.0/x86-64
