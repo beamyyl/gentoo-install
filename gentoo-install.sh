@@ -213,6 +213,19 @@ cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<EOF
 priority = 9999
 sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
 location = /var/cache/binhost/gentoo-x86-64-v3
+
+# If future emerge throws signature errors:
+#[gentoo]
+#priority = 1
+#sync-uri = https://distfiles-cdn-origin.gentoo.org/releases/amd64/binpackages/23.0/x86-64
+#location = /var/cache/binhost/gentoo
+#verify-signature = true
+
+#[gentoo-x86-64-v3]
+#priority = 9999
+#sync-uri = https://distfiles-cdn-origin.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
+#location = /var/cache/binhost/gentoo-x86-64-v3
+
 EOF
 
 info "binrepos.conf updated with x86-64v3 repository."
