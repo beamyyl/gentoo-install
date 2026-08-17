@@ -185,6 +185,7 @@ else
 fi
 
 cat >> /mnt/gentoo/etc/portage/make.conf <<EOF
+USE="gstreamer"
 
 # Binary package host
 FEATURES="\${FEATURES} getbinpkg"
@@ -207,7 +208,7 @@ info " CONFIGURING BINREPOS"
 info "============================================================"
 mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
 
-cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<EOF
+cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf << EOF
 
 [gentoo-x86-64-v3]
 priority = 9999
