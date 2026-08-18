@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # The "best" Gentoo Install Script
-# Supports: UEFI or BIOS + OpenRC or systemd
+# Supports: UEFI or BIOS + OpenRC or systemd + Optional Binpackages
 # =============================================================================
 
 set -e
@@ -26,7 +26,7 @@ done
 clear
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║            GENTOO INSTALLER                                        ║${NC}"
+echo -e "${CYAN}║                GENTOO INSTALLER                          ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 info "This script will install Gentoo to /mnt/gentoo."
@@ -104,7 +104,16 @@ case "$INIT_CHOICE" in
     *) die "Invalid choice. Enter 1 or 2." ;;
 esac
 echo ""
-info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM"
+
+ask "Do you want to enable binary support (binpackages)? [y/N]"
+read -rp "  Choice [y/N]: " BIN_CHOICE
+case "$BIN_CHOICE" in
+    [yY][eE][sS]|[yY]) USE_BINPKG="yes" ;;
+    *) USE_BINPKG="no" ;;
+esac
+echo ""
+
+info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  binpkg=$USE_BINPKG"
 echo ""
 
 # =============================================================================
@@ -127,10 +136,11 @@ LOCALE="${LOCALE:-en_US.UTF-8}"
 echo ""
 
 info "Configuration summary:"
-echo "   Boot mode : $BOOT_MODE"
-echo "   Init      : $INIT_SYSTEM"
-echo "   Hostname  : $NEW_HOSTNAME"
-echo "   Locale    : $LOCALE"
+echo "    Boot mode : $BOOT_MODE"
+echo "    Init      : $INIT_SYSTEM"
+echo "    Binpkg    : $USE_BINPKG"
+echo "    Hostname  : $NEW_HOSTNAME"
+echo "    Locale    : $LOCALE"
 echo ""
 read -rp "  Press ENTER to continue..."
 echo ""
@@ -165,9 +175,8 @@ TARBALL=$(ls /mnt/gentoo/stage3-amd64-*.tar.xz 2>/dev/null | head -n1)
 
 info "Found: $(basename "$TARBALL")"
 info "Extracting..."
-tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo -q 2>/dev/null \
+tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo 2>/dev/null \
     || tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
-# Note: tar doesn't have a -q flag; silence via output redirect for cleanliness
 rm -f "$TARBALL"
 info "Stage3 extracted."
 echo ""
@@ -187,14 +196,18 @@ fi
 cat >> /mnt/gentoo/etc/portage/make.conf <<EOF
 USE="gstreamer"
 
-# Binary package host
-FEATURES="\${FEATURES} getbinpkg"
-FEATURES="\${FEATURES} binpkg-request-signature"
-
 # GRUB platform
 GRUB_PLATFORMS="$TARGET_GRUB"
 EOF
-# echo 'EMERGE_DEFAULT_OPTS="--jobs=6 --load-average=8"' >> /mnt/gentoo/etc/portage/make.conf 
+
+if [ "$USE_BINPKG" = "yes" ]; then
+cat >> /mnt/gentoo/etc/portage/make.conf <<EOF
+
+# Binary package host
+FEATURES="\${FEATURES} getbinpkg"
+FEATURES="\${FEATURES} binpkg-request-signature"
+EOF
+fi
 
 info "make.conf updated."
 echo ""
@@ -203,35 +216,23 @@ sleep 0.5
 # =============================================================================
 # Binrepo setup
 # =============================================================================
-info "============================================================"
-info " CONFIGURING BINREPOS"
-info "============================================================"
-mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
+if [ "$USE_BINPKG" = "yes" ]; then
+    info "============================================================"
+    info " CONFIGURING BINREPOS"
+    info "============================================================"
+    mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
 
-cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf << EOF
+    cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf << EOF
 
 [gentoo-x86-64-v3]
 priority = 9999
 sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
 location = /var/cache/binhost/gentoo-x86-64-v3
-
-# If future emerge throws signature errors:
-# (also you MUST run `sudo update-ca-certificates --fresh` IF using the bottom repos)
-#[gentoo]
-#priority = 1
-#sync-uri = https://distfiles-cdn-origin.gentoo.org/releases/amd64/binpackages/23.0/x86-64
-#location = /var/cache/binhost/gentoo
-#verify-signature = true
-
-#[gentoo-x86-64-v3]
-#priority = 9999
-#sync-uri = https://distfiles-cdn-origin.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
-#location = /var/cache/binhost/gentoo-x86-64-v3
-
 EOF
 
-info "binrepos.conf updated with x86-64v3 repository."
-echo ""
+    info "binrepos.conf updated with x86-64v3 repository."
+    echo ""
+fi
 
 # =============================================================================
 # package.use
@@ -282,11 +283,11 @@ info "============================================================"
 cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 
 mount --types proc  /proc    /mnt/gentoo/proc
-mount --rbind       /sys     /mnt/gentoo/sys
+mount --rbind        /sys     /mnt/gentoo/sys
 mount --make-rslave          /mnt/gentoo/sys
-mount --rbind       /dev     /mnt/gentoo/dev
+mount --rbind        /dev     /mnt/gentoo/dev
 mount --make-rslave          /mnt/gentoo/dev
-mount --bind        /run     /mnt/gentoo/run
+mount --bind         /run     /mnt/gentoo/run
 mount --make-slave           /mnt/gentoo/run
 
 info "Generating /etc/fstab..."
@@ -315,6 +316,7 @@ INIT_SYSTEM="${INIT_SYSTEM}"
 NEW_HOSTNAME="${NEW_HOSTNAME}"
 LOCALE="${LOCALE}"
 GRUB_DISK="${GRUB_DISK}"
+USE_BINPKG="${USE_BINPKG}"
 
 # ---------------------------------------------------------------------------
 # Portage snapshot
@@ -324,7 +326,7 @@ emerge-webrsync -q
 # ---------------------------------------------------------------------------
 # Profile selection
 # ---------------------------------------------------------------------------
-info "Selecting desktop/${INIT_SYSTEM} profile..."
+info "Selecting desktop/\${INIT_SYSTEM} profile..."
 
 if [ "\${INIT_SYSTEM}" = "openrc" ]; then
     PROFILE_NUM=\$(eselect profile list \
@@ -351,8 +353,10 @@ eselect profile show
 # ---------------------------------------------------------------------------
 # Binary package keyring
 # ---------------------------------------------------------------------------
-info "Initialising binary package keyring..."
-getuto -q 2>/dev/null || getuto
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    info "Initialising binary package keyring..."
+    getuto -q 2>/dev/null || getuto
+fi
 
 # ---------------------------------------------------------------------------
 # Locale
@@ -367,7 +371,7 @@ env-update && source /etc/profile
 # ---------------------------------------------------------------------------
 # CPU flags
 # ---------------------------------------------------------------------------
-emerge -q --ask=n app-portage/cpuid2cpuflags
+emerge --ask=n app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
 echo "*/* \$(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 info "CPU flags written to /etc/portage/package.use/00cpu-flags:"
@@ -377,14 +381,24 @@ cat /etc/portage/package.use/00cpu-flags
 # Firmware
 # ---------------------------------------------------------------------------
 echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
-emerge -q --ask=n sys-kernel/linux-firmware
-emerge -q --ask=n sys-firmware/sof-firmware \
-    || warn "sof-firmware not available, skipping."
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    emerge -q --ask=n sys-kernel/linux-firmware
+    emerge -q --ask=n sys-firmware/sof-firmware \
+        || warn "sof-firmware not available, skipping."
+else
+    emerge --ask=n sys-kernel/linux-firmware
+    emerge --ask=n sys-firmware/sof-firmware \
+        || warn "sof-firmware not available, skipping."
+fi
 
 # ---------------------------------------------------------------------------
 # installkernel + dracut config
 # ---------------------------------------------------------------------------
-emerge -q --ask=n sys-kernel/installkernel
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    emerge -q --ask=n sys-kernel/installkernel
+else
+    emerge --ask=n sys-kernel/installkernel
+fi
 
 info "Configuring dracut..."
 mkdir -p /etc/dracut.conf.d
@@ -396,14 +410,23 @@ EOF
 # ---------------------------------------------------------------------------
 # Kernel
 # ---------------------------------------------------------------------------
-info "Installing gentoo-kernel-bin..."
-emerge -q --ask=n sys-kernel/gentoo-kernel-bin
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    info "Installing gentoo-kernel-bin..."
+    emerge -q --ask=n sys-kernel/gentoo-kernel-bin
+else
+    info "Installing gentoo-kernel-bin..."
+    emerge --ask=n sys-kernel/gentoo-kernel-bin
+fi
 
 # ---------------------------------------------------------------------------
 # NetworkManager
 # ---------------------------------------------------------------------------
 info "Installing NetworkManager..."
-emerge -q --ask=n net-misc/networkmanager
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    emerge -q --ask=n net-misc/networkmanager
+else
+    emerge --ask=n net-misc/networkmanager
+fi
 
 if [ "\${INIT_SYSTEM}" = "openrc" ]; then
     rc-update add NetworkManager default
@@ -416,7 +439,11 @@ fi
 # ---------------------------------------------------------------------------
 if [ "\${INIT_SYSTEM}" = "openrc" ]; then
     info "Installing syslog-ng and cronie..."
-    emerge -q --ask=n app-admin/syslog-ng sys-process/cronie
+    if [ "\${USE_BINPKG}" = "yes" ]; then
+        emerge -q --ask=n app-admin/syslog-ng sys-process/cronie
+    else
+        emerge --ask=n app-admin/syslog-ng sys-process/cronie
+    fi
     rc-update add syslog-ng default
     rc-update add cronie default
 fi
@@ -424,12 +451,21 @@ fi
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
-emerge -q --ask=n app-admin/sudo app-editors/vim
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    emerge -q --ask=n app-admin/sudo app-editors/vim
+else
+    emerge --ask=n app-admin/sudo app-editors/vim
+fi
+
 # ---------------------------------------------------------------------------
 # GRUB
 # ---------------------------------------------------------------------------
 info "Installing GRUB..."
-emerge -q --ask=n sys-boot/grub --noreplace 
+if [ "\${USE_BINPKG}" = "yes" ]; then
+    emerge -q --ask=n sys-boot/grub --noreplace 
+else
+    emerge --ask=n sys-boot/grub --noreplace 
+fi
 
 if [ "\${BOOT_MODE}" = "uefi" ]; then
     info "Running grub-install (UEFI)..."
@@ -492,9 +528,9 @@ info " Installation complete!"
 info "============================================================"
 info " Exit the chroot and reboot:"
 info ""
-info "   exit"
-info "   umount -R /mnt/gentoo"
-info "   reboot"
+info "    exit"
+info "    umount -R /mnt/gentoo"
+info "    reboot"
 info "============================================================"
 CHROOT_EOF
 
