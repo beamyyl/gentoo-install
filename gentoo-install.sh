@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# The "best" Gentoo Install Script
-# Supports: UEFI or BIOS + OpenRC or systemd + Optional Binpackages
+# YAGIS (Yet Another Gentoo Install Script)
+# Supports: UEFI / BIOS + OpenRC / systemd + binpkgs
 # =============================================================================
 
 set -e
@@ -12,22 +12,16 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 die()   { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 ask()   { echo -e "${CYAN}[INPUT]${NC} $*"; }
 
-# =============================================================================
-# Sanity checks
-# =============================================================================
 for cmd in arch-chroot genfstab links; do
     command -v "$cmd" &>/dev/null \
-        || die "'$cmd' not found. Are you booted from the official Gentoo live ISO?"
+        || die "'$cmd' not found. Are you booted from the Gentoo/Arch live ISO?"
 done
 
-# =============================================================================
-# Reminders
-# =============================================================================
 clear
 echo ""
-echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║                GENTOO INSTALLER                          ║${NC}"
-echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
+echo -e "${CYAN}============================================================${NC}"
+echo -e "${CYAN}=                    GENTOO INSTALLER                      =${NC}"
+echo -e "${CYAN}============================================================${NC}"
 echo ""
 info "This script will install Gentoo to /mnt/gentoo."
 info "Your partitions must be formatted and mounted BEFORE continuing."
@@ -35,19 +29,15 @@ echo ""
 echo "Here are some partition examples:"
 echo "  Mount commands (UEFI):"
 echo ""
-echo "    mount /dev/sda3 /mnt/gentoo"
-echo "    mkdir -p /mnt/gentoo/efi"
-echo "    mount /dev/sda1 /mnt/gentoo/efi"
-echo "    swapon /dev/sda2"
+echo "    mount /dev/sda2 /mnt/gentoo --mkdir"
+echo "    mount /dev/sda1 /mnt/gentoo/efi --mkdir"
 echo ""
 echo "  For BIOS/GPT, you MUST have a 1MB BIOS BOOT partition."
 echo "  Do NOT format or mount it."
 echo ""
-echo ""
 echo "  Mount commands (BIOS):"
 echo ""
-echo "    mount /dev/sda3 /mnt/gentoo"
-echo "    swapon /dev/sda2"
+echo "    mount /dev/sda1 /mnt/gentoo --mkdir"
 echo ""
 warn "If your partitions are NOT yet mounted, press Ctrl+C now,"
 warn "mount them, then re-run this script."
@@ -59,9 +49,6 @@ mountpoint -q /mnt/gentoo || die "/mnt/gentoo is not mounted."
 info "Root mount point verified."
 echo ""
 
-# =============================================================================
-# Boot mode & init system selection
-# =============================================================================
 info "============================================================"
 info " BOOT MODE & INIT SYSTEM"
 info "============================================================"
@@ -116,9 +103,6 @@ echo ""
 info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  binpkg=$USE_BINPKG"
 echo ""
 
-# =============================================================================
-# System configuration
-# =============================================================================
 info "============================================================"
 info " SYSTEM CONFIGURATION"
 info "============================================================"
@@ -145,9 +129,6 @@ echo ""
 read -rp "  Press ENTER to continue..."
 echo ""
 
-# =============================================================================
-# Stage3
-# =============================================================================
 info "============================================================"
 info " STAGE3 DOWNLOAD"
 info "============================================================"
@@ -167,7 +148,7 @@ read -rp "  Press ENTER to open Links..."
 echo ""
 
 cd /mnt/gentoo
-links https://www.gentoo.org/downloads/
+links "https://www.gentoo.org/downloads/amd64/#stages"
 
 echo ""
 TARBALL=$(ls /mnt/gentoo/stage3-amd64-*.tar.xz 2>/dev/null | head -n1)
@@ -181,87 +162,46 @@ rm -f "$TARBALL"
 info "Stage3 extracted."
 echo ""
 
-# =============================================================================
-# make.conf
-# =============================================================================
-info "============================================================"
-info " CONFIGURING make.conf"
-info "============================================================"
+mkdir -p /mnt/gentoo/etc/portage/package.use
+mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
+MAKE_CONF=/mnt/gentoo/etc/portage/make.conf
+
 if [ "$BOOT_MODE" = "uefi" ]; then
-    TARGET_GRUB="efi-64"
+    cat >> "$MAKE_CONF" <<'EOF'
+
+GRUB_PLATFORMS="efi-64"
+EOF
 else
-    TARGET_GRUB="pc"
-fi
+    cat >> "$MAKE_CONF" <<'EOF'
 
-cat >> /mnt/gentoo/etc/portage/make.conf <<EOF
-USE="gstreamer"
-
-# GRUB platform
-GRUB_PLATFORMS="$TARGET_GRUB"
-EOF
-
-if [ "$USE_BINPKG" = "yes" ]; then
-cat >> /mnt/gentoo/etc/portage/make.conf <<EOF
-
-# Binary package host
-FEATURES="\${FEATURES} getbinpkg"
-FEATURES="\${FEATURES} binpkg-request-signature"
+GRUB_PLATFORMS="pc"
 EOF
 fi
 
-info "make.conf updated."
-echo ""
-sleep 0.5
-
-# =============================================================================
-# Binrepo setup
-# =============================================================================
 if [ "$USE_BINPKG" = "yes" ]; then
-    info "============================================================"
-    info " CONFIGURING BINREPOS"
-    info "============================================================"
-    mkdir -p /mnt/gentoo/etc/portage/binrepos.conf
+    cat >> "$MAKE_CONF" <<'EOF'
 
-    cat >> /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf << EOF
+FEATURES="${FEATURES} getbinpkg"
+FEATURES="${FEATURES} binpkg-request-signature"
+EOF
 
-[gentoo-x86-64-v3]
+cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
+[gentoo]
 priority = 9999
 sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
-location = /var/cache/binhost/gentoo-x86-64-v3
+location = /var/cache/binhost/gentoo
 EOF
-
-    info "binrepos.conf updated with x86-64v3 repository."
-    echo ""
 fi
 
-# =============================================================================
-# package.use
-# =============================================================================
-info "============================================================"
-info " CONFIGURING package.use"
-info "============================================================"
-
-mkdir -p /mnt/gentoo/etc/portage/package.use
-
-if [ "$BOOT_MODE" = "uefi" ]; then
-    echo "sys-kernel/installkernel grub dracut" \
-        > /mnt/gentoo/etc/portage/package.use/installkernel
-else
-    echo "sys-kernel/installkernel grub dracut" \
-        > /mnt/gentoo/etc/portage/package.use/installkernel
-fi
+cat > /mnt/gentoo/etc/portage/package.use/installkernel <<'EOF'
+sys-kernel/installkernel grub dracut
+EOF
 
 cat > /mnt/gentoo/etc/portage/package.use/networkmanager <<'EOF'
 net-misc/networkmanager wifi
 net-wireless/wpa_supplicant dbus
 EOF
 
-info "package.use written."
-echo ""
-
-# =============================================================================
-# Hostname
-# =============================================================================
 echo "$NEW_HOSTNAME" > /mnt/gentoo/etc/hostname
 echo "hostname=\"$NEW_HOSTNAME\"" > /mnt/gentoo/etc/conf.d/hostname
 cat > /mnt/gentoo/etc/hosts <<EOF
@@ -273,59 +213,38 @@ EOF
 info "Hostname written to /mnt/gentoo/etc/hostname: $NEW_HOSTNAME"
 echo ""
 
-# =============================================================================
-# Mounting pseudo-filesystems
-# =============================================================================
-info "============================================================"
-info " PSEUDO-FILESYSTEMS & FSTAB"
-info "============================================================"
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc/resolv.conf
+genfstab -U /mnt/gentoo > /mnt/gentoo/etc/fstab
 
-cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
-
-mount --types proc  /proc    /mnt/gentoo/proc
-mount --rbind        /sys     /mnt/gentoo/sys
-mount --make-rslave          /mnt/gentoo/sys
-mount --rbind        /dev     /mnt/gentoo/dev
-mount --make-rslave          /mnt/gentoo/dev
-mount --bind         /run     /mnt/gentoo/run
-mount --make-slave           /mnt/gentoo/run
-
-info "Generating /etc/fstab..."
-genfstab -U /mnt/gentoo >> /mnt/gentoo/etc/fstab
-info "fstab contents:"
+echo
+info "/etc/fstab:"
 cat /mnt/gentoo/etc/fstab
-echo ""
 
-# =============================================================================
-# setting up chroot
-# =============================================================================
-info "============================================================"
-info " WRITING IN-CHROOT SCRIPT"
-info "============================================================"
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc/resolv.conf
+mount --types proc /proc /mnt/gentoo/proc
+mount --rbind /sys /mnt/gentoo/sys
+mount --make-rslave /mnt/gentoo/sys
+mount --rbind /dev /mnt/gentoo/dev
+mount --make-rslave /mnt/gentoo/dev
+mount --bind /run /mnt/gentoo/run
+mount --make-slave /mnt/gentoo/run
 
-cat > /mnt/gentoo/root/chroot-install.sh <<CHROOT_EOF
+cat > /mnt/gentoo/root/chroot-install.sh <<CHROOT
 #!/bin/bash
 set -e
 
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-info()  { echo -e "\${GREEN}[CHROOT]\${NC}  \$*"; }
-warn()  { echo -e "\${YELLOW}[CHROOT]\${NC}  \$*"; }
+BOOT_MODE="$BOOT_MODE"
+INIT_SYSTEM="$INIT_SYSTEM"
+USE_BINPKG="$USE_BINPKG"
+NEW_HOSTNAME="$NEW_HOSTNAME"
+LOCALE="$LOCALE"
+GRUB_DISK="$GRUB_DISK"
 
-BOOT_MODE="${BOOT_MODE}"
-INIT_SYSTEM="${INIT_SYSTEM}"
-NEW_HOSTNAME="${NEW_HOSTNAME}"
-LOCALE="${LOCALE}"
-GRUB_DISK="${GRUB_DISK}"
-USE_BINPKG="${USE_BINPKG}"
+info() { echo -e "\033[0;32m[CHROOT]\033[0m \$*"; }; warn() { echo -e "\033[1;33m[WARN]\033[0m \$*"; }; die() { echo -e "\033[0;31m[FAIL]\033[0m \$*"; exit 1; }
 
-# ---------------------------------------------------------------------------
-# Portage snapshot
-# ---------------------------------------------------------------------------
+info "Updating Portage..."
 emerge-webrsync -q
 
-# ---------------------------------------------------------------------------
-# Profile selection
-# ---------------------------------------------------------------------------
 info "Selecting desktop/\${INIT_SYSTEM} profile..."
 
 if [ "\${INIT_SYSTEM}" = "openrc" ]; then
@@ -350,17 +269,11 @@ info "Setting profile \${PROFILE_NUM}..."
 eselect profile set "\${PROFILE_NUM}"
 eselect profile show
 
-# ---------------------------------------------------------------------------
-# Binary package keyring
-# ---------------------------------------------------------------------------
 if [ "\${USE_BINPKG}" = "yes" ]; then
     info "Initialising binary package keyring..."
     getuto -q 2>/dev/null || getuto
 fi
 
-# ---------------------------------------------------------------------------
-# Locale
-# ---------------------------------------------------------------------------
 info "Configuring locale: \${LOCALE}"
 echo "\${LOCALE} UTF-8" >> /etc/locale.gen
 locale-gen 2>/dev/null
@@ -368,19 +281,14 @@ LOCALE_NUM=\$(eselect locale list | grep "\${LOCALE}" | head -n1 | awk -F'[][]' 
 [ -n "\$LOCALE_NUM" ] && eselect locale set "\$LOCALE_NUM"
 env-update && source /etc/profile
 
-# ---------------------------------------------------------------------------
-# CPU flags
-# ---------------------------------------------------------------------------
 emerge --ask=n app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
 echo "*/* \$(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
 info "CPU flags written to /etc/portage/package.use/00cpu-flags:"
 cat /etc/portage/package.use/00cpu-flags
 
-# ---------------------------------------------------------------------------
-# Firmware
-# ---------------------------------------------------------------------------
 echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
+
 if [ "\${USE_BINPKG}" = "yes" ]; then
     emerge -q --ask=n sys-kernel/linux-firmware
     emerge -q --ask=n sys-firmware/sof-firmware \
@@ -391,9 +299,6 @@ else
         || warn "sof-firmware not available, skipping."
 fi
 
-# ---------------------------------------------------------------------------
-# installkernel + dracut config
-# ---------------------------------------------------------------------------
 if [ "\${USE_BINPKG}" = "yes" ]; then
     emerge -q --ask=n sys-kernel/installkernel
 else
@@ -407,9 +312,6 @@ cat > /etc/dracut.conf.d/00-installkernel.conf <<EOF
 kernel_cmdline=" root=UUID=\${ROOT_UUID} "
 EOF
 
-# ---------------------------------------------------------------------------
-# Kernel
-# ---------------------------------------------------------------------------
 if [ "\${USE_BINPKG}" = "yes" ]; then
     info "Installing gentoo-kernel-bin..."
     emerge -q --ask=n sys-kernel/gentoo-kernel-bin
@@ -418,10 +320,8 @@ else
     emerge --ask=n sys-kernel/gentoo-kernel-bin
 fi
 
-# ---------------------------------------------------------------------------
-# NetworkManager
-# ---------------------------------------------------------------------------
 info "Installing NetworkManager..."
+
 if [ "\${USE_BINPKG}" = "yes" ]; then
     emerge -q --ask=n net-misc/networkmanager
 else
@@ -434,37 +334,31 @@ else
     systemctl enable NetworkManager
 fi
 
-# ---------------------------------------------------------------------------
-# Logging + cron
-# ---------------------------------------------------------------------------
 if [ "\${INIT_SYSTEM}" = "openrc" ]; then
     info "Installing syslog-ng and cronie..."
+
     if [ "\${USE_BINPKG}" = "yes" ]; then
         emerge -q --ask=n app-admin/syslog-ng sys-process/cronie
     else
         emerge --ask=n app-admin/syslog-ng sys-process/cronie
     fi
+
     rc-update add syslog-ng default
     rc-update add cronie default
 fi
 
-# ---------------------------------------------------------------------------
-# Utilities
-# ---------------------------------------------------------------------------
 if [ "\${USE_BINPKG}" = "yes" ]; then
     emerge -q --ask=n app-admin/sudo app-editors/vim
 else
     emerge --ask=n app-admin/sudo app-editors/vim
 fi
 
-# ---------------------------------------------------------------------------
-# GRUB
-# ---------------------------------------------------------------------------
 info "Installing GRUB..."
+
 if [ "\${USE_BINPKG}" = "yes" ]; then
-    emerge -q --ask=n sys-boot/grub --noreplace 
+    emerge -q --ask=n sys-boot/grub --noreplace
 else
-    emerge --ask=n sys-boot/grub --noreplace 
+    emerge --ask=n sys-boot/grub --noreplace
 fi
 
 if [ "\${BOOT_MODE}" = "uefi" ]; then
@@ -476,29 +370,19 @@ else
 fi
 
 info "Generating grub.cfg..."
-grub-mkconfig -o /boot/grub/grub.cfg \
-    || grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 
-# ---------------------------------------------------------------------------
-# systemd first-boot setup
-# ---------------------------------------------------------------------------
 if [ "\${INIT_SYSTEM}" = "systemd" ]; then
     info "Running systemd-firstboot..."
     systemd-firstboot --hostname="\${NEW_HOSTNAME}" --locale="\${LOCALE}"
 fi
 
-# ---------------------------------------------------------------------------
-# Root password
-# ---------------------------------------------------------------------------
 echo ""
 info "============================================================"
 info " Set the ROOT password:"
 info "============================================================"
 passwd
 
-# ---------------------------------------------------------------------------
-# Optional new user
-# ---------------------------------------------------------------------------
 echo ""
 echo -e "\${CYAN}[INPUT]\${NC} Would you like to create a new user? (y/n)"
 read -rp "  Choice: " CREATE_USER
@@ -506,6 +390,7 @@ read -rp "  Choice: " CREATE_USER
 if [ "\${CREATE_USER}" = "y" ]; then
     echo -e "\${CYAN}[INPUT]\${NC} Enter the new username:"
     read -rp "  Username: " NEW_USER
+
     if [ -z "\${NEW_USER}" ]; then
         warn "No username entered — skipping user creation."
     else
@@ -513,15 +398,17 @@ if [ "\${CREATE_USER}" = "y" ]; then
         info "User '\${NEW_USER}' created and added to: wheel, audio, video."
         info "Set a password for '\${NEW_USER}':"
         passwd "\${NEW_USER}"
+
+        mkdir -p /etc/sudoers.d
+        echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
+        chmod 0440 /etc/sudoers.d/10-wheel
+
         info "User setup complete."
     fi
 else
     info "Skipping user creation."
 fi
 
-# ---------------------------------------------------------------------------
-# Done
-# ---------------------------------------------------------------------------
 echo ""
 info "============================================================"
 info " Installation complete!"
@@ -532,15 +419,10 @@ info "    exit"
 info "    umount -R /mnt/gentoo"
 info "    reboot"
 info "============================================================"
-CHROOT_EOF
+CHROOT
 
 chmod +x /mnt/gentoo/root/chroot-install.sh
-info "In-chroot script written."
-echo ""
 
-# =============================================================================
-# Actual chroot
-# =============================================================================
 info "============================================================"
 info " ENTERING CHROOT"
 info "============================================================"
@@ -548,9 +430,6 @@ echo ""
 
 arch-chroot /mnt/gentoo /bin/bash /root/chroot-install.sh
 
-# =============================================================================
-# Cleanup
-# =============================================================================
 info "============================================================"
 info " CLEANUP"
 info "============================================================"
