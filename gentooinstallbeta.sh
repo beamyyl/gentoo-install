@@ -135,18 +135,15 @@ info " STAGE3 DOWNLOAD"
 info "============================================================"
 echo
 
-info "Download the appropriate amd64 desktop stage3 from:"
-info "https://www.gentoo.org/downloads/"
-echo
+info "https://www.gentoo.org/downloads/amd64/#stages"
 
 if [ "$INIT_SYSTEM" = "openrc" ]; then
     info "Use an amd64 desktop OpenRC stage3."
 else
     info "Use an amd64 desktop systemd stage3."
 fi
-
-echo
-read -rp "Path to the downloaded stage3 archive: " STAGE3
+info "Press enter to open links..."
+links "https://www.gentoo.org/downloads/amd64/#stages"
 
 [ -f "$STAGE3" ] || die "Stage3 archive not found: $STAGE3"
 
