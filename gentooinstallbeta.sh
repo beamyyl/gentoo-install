@@ -4,7 +4,7 @@ set -e
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 info() { echo -e "${GREEN}[INFO]${NC} $*"; }; warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }; die() { echo -e "${RED}[FAIL]${NC} $*"; exit 1; }; ask() { echo -e "${CYAN}[INPUT]${NC} $*"; }
 
-for cmd in arch-chroot genfstab links tar; do
+for cmd in arch-chroot genfstab tar; do
     command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' not found."
 done
 
@@ -106,19 +106,12 @@ LOCALE="${LOCALE:-en_US.UTF-8}"
 
 echo
 
-ask "Enter your timezone (press ENTER to accept the default: UTC)."
-read -rp "  Timezone: " TIMEZONE
-TIMEZONE="${TIMEZONE:-UTC}"
-
-echo
-
 info "Configuration summary:"
 echo "    Boot mode : $BOOT_MODE"
 echo "    Init      : $INIT_SYSTEM"
 echo "    Binpkg    : $USE_BINPKG"
 echo "    Hostname  : $NEW_HOSTNAME"
 echo "    Locale    : $LOCALE"
-echo "    Timezone  : $TIMEZONE"
 echo
 
 read -rp "  Continue? [y/N] " CONTINUE
@@ -135,15 +128,18 @@ info " STAGE3 DOWNLOAD"
 info "============================================================"
 echo
 
-info "https://www.gentoo.org/downloads/amd64/#stages"
+info "Download the appropriate amd64 desktop stage3 from:"
+info "https://www.gentoo.org/downloads/"
+echo
 
 if [ "$INIT_SYSTEM" = "openrc" ]; then
     info "Use an amd64 desktop OpenRC stage3."
 else
     info "Use an amd64 desktop systemd stage3."
 fi
-info "Press enter to open links..."
-links "https://www.gentoo.org/downloads/amd64/#stages"
+
+echo
+read -rp "Path to the downloaded stage3 archive: " STAGE3
 
 [ -f "$STAGE3" ] || die "Stage3 archive not found: $STAGE3"
 
@@ -221,7 +217,6 @@ INIT_SYSTEM="$INIT_SYSTEM"
 USE_BINPKG="$USE_BINPKG"
 NEW_HOSTNAME="$NEW_HOSTNAME"
 LOCALE="$LOCALE"
-TIMEZONE="$TIMEZONE"
 GRUB_DISK="$GRUB_DISK"
 
 info() { echo -e "\033[0;32m[CHROOT]\033[0m \$*"; }; warn() { echo -e "\033[1;33m[WARN]\033[0m \$*"; }; die() { echo -e "\033[0;31m[FAIL]\033[0m \$*"; exit 1; }
@@ -234,9 +229,6 @@ sed -i "s/^\#\${LOCALE} UTF-8/\${LOCALE} UTF-8/" /etc/locale.gen
 locale-gen
 env-update
 source /etc/profile
-
-[ -f "/usr/share/zoneinfo/\$TIMEZONE" ] || die "Timezone not found: \$TIMEZONE"
-ln -sf "/usr/share/zoneinfo/\$TIMEZONE" /etc/localtime
 
 if [ "\$USE_BINPKG" = "yes" ]; then
     info "Setting up binary package key..."
@@ -280,7 +272,7 @@ fi
 grub-mkconfig -o /boot/grub/grub.cfg
 
 if [ "\$INIT_SYSTEM" = "systemd" ]; then
-    systemd-firstboot --hostname="\$NEW_HOSTNAME" --locale="\$LOCALE" --timezone="\$TIMEZONE"
+    systemd-firstboot --hostname="\$NEW_HOSTNAME" --locale="\$LOCALE"
 fi
 
 echo
