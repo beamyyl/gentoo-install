@@ -14,7 +14,7 @@ ask()   { echo -e "${CYAN}[INPUT]${NC} $*"; }
 
 for cmd in arch-chroot genfstab links; do
     command -v "$cmd" &>/dev/null \
-        || die "'$cmd' not found. Are you booted from the official Gentoo live ISO?"
+        || die "'$cmd' not found. Are you booted from the Gentoo/Arch live ISO?"
 done
 
 clear
