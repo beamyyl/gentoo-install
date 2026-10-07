@@ -180,9 +180,12 @@ fi
 
 if [ "$USE_BINPKG" = "yes" ]; then
     cat >> "$MAKE_CONF" <<'EOF'
+#MAKEOPTS="-j14 -l14"
+#USE="X wayland pipewire sound-server pulseaudio networkmanager"
 
-FEATURES="${FEATURES} getbinpkg"
-FEATURES="${FEATURES} binpkg-request-signature"
+FEATURES="${FEATURES} getbinpkg binpkg-request-signature parallel-install parallel-fetch -merge-wait"
+EMERGE_DEFAULT_OPTS="--keep-going"
+#EMERGE_DEFAULT_OPTS="--jobs=14 --load-average=14 --keep-going"
 EOF
 
 cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
