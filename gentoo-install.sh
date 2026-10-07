@@ -373,8 +373,9 @@ info "Generating grub.cfg..."
 grub-mkconfig -o /boot/grub/grub.cfg
 
 if [ "\${INIT_SYSTEM}" = "systemd" ]; then
-    info "Running systemd-firstboot..."
+    info "Running systemd patches..."
     systemd-firstboot --hostname="\${NEW_HOSTNAME}" --locale="\${LOCALE}"
+    systemd-machine-id-setup
 fi
 
 echo ""
