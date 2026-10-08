@@ -95,12 +95,25 @@ echo ""
 ask "Do you want to enable binary support (binpackages)? [y/N]"
 read -rp "  Choice [y/N]: " BIN_CHOICE
 case "$BIN_CHOICE" in
-    [yY][eE][sS]|[yY]) USE_BINPKG="yes" ;;
-    *) USE_BINPKG="no" ;;
+    [yY][eE][sS]|[yY])
+        USE_BINPKG="yes"
+        ask "Do you also want to use the x86-64-v3 binary repository?"
+        ask "  This provides optimized packages for newer CPUs."
+        ask "  Choose 'n' for the standard x86-64 repository (works on older/any CPUs)."
+        read -rp "  Choice [y/N]: " BIN_V3_CHOICE
+        case "$BIN_V3_CHOICE" in
+            [yY][eE][sS]|[yY]) USE_BINPKG_V3="yes" ;;
+            *)                 USE_BINPKG_V3="no"  ;;
+        esac
+        ;;
+    *)
+        USE_BINPKG="no"
+        USE_BINPKG_V3="no"
+        ;;
 esac
 echo ""
 
-info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  binpkg=$USE_BINPKG"
+info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  binpkg=$USE_BINPKG  v3=$USE_BINPKG_V3"
 echo ""
 
 info "============================================================"
@@ -123,6 +136,7 @@ info "Configuration summary:"
 echo "    Boot mode : $BOOT_MODE"
 echo "    Init      : $INIT_SYSTEM"
 echo "    Binpkg    : $USE_BINPKG"
+echo "    Binpkg v3 : $USE_BINPKG_V3"
 echo "    Hostname  : $NEW_HOSTNAME"
 echo "    Locale    : $LOCALE"
 echo ""
@@ -188,8 +202,14 @@ EMERGE_DEFAULT_OPTS="--keep-going"
 #EMERGE_DEFAULT_OPTS="--jobs=14 --load-average=14 --keep-going"
 EOF
 
-cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
+if [ "$USE_BINPKG_V3" = "yes" ]; then
+    cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
 [gentoo]
+priority = 9998
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64
+location = /var/cache/binhost/gentoo
+
+[gentoo-v3]
 priority = 9999
 sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
 location = /var/cache/binhost/gentoo
@@ -239,6 +259,7 @@ set -e
 BOOT_MODE="$BOOT_MODE"
 INIT_SYSTEM="$INIT_SYSTEM"
 USE_BINPKG="$USE_BINPKG"
+USE_BINPKG_V3="$USE_BINPKG_V3"
 NEW_HOSTNAME="$NEW_HOSTNAME"
 LOCALE="$LOCALE"
 GRUB_DISK="$GRUB_DISK"
