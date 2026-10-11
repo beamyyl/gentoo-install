@@ -201,6 +201,7 @@ FEATURES="${FEATURES} getbinpkg binpkg-request-signature parallel-install parall
 EMERGE_DEFAULT_OPTS="--keep-going"
 #EMERGE_DEFAULT_OPTS="--jobs=14 --load-average=14 --keep-going"
 EOF
+fi
 
 if [ "$USE_BINPKG_V3" = "yes" ]; then
     cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
