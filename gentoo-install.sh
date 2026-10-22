@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # YAGIS (Yet Another Gentoo Install Script)
-# Supports: UEFI / BIOS + OpenRC / systemd + binpkgs
+# Supports: UEFI / BIOS + OpenRC / systemd + binpkgs + glibc / musl
 # =============================================================================
 
 set -e
@@ -13,8 +13,7 @@ die()   { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 ask()   { echo -e "${CYAN}[INPUT]${NC} $*"; }
 
 for cmd in arch-chroot genfstab links; do
-    command -v "$cmd" &>/dev/null \
-        || die "'$cmd' not found. Are you booted from the Gentoo/Arch live ISO?"
+    command -v "$cmd" &>/dev/null || die "'$cmd' not found. Are you booted from the Gentoo/Arch live ISO?"
 done
 
 clear
@@ -54,7 +53,7 @@ info " BOOT MODE & INIT SYSTEM"
 info "============================================================"
 echo ""
 
-ask "Boot mode — are you using UEFI or BIOS?"
+ask "Are you using UEFI or BIOS?"
 ask "  1) UEFI  (modern systems, GPT disk)"
 ask "  2) BIOS  (legacy / older systems, MBR or GPT disk)"
 read -rp "  Choice [1/2]: " BOOT_CHOICE
@@ -81,7 +80,7 @@ else
 fi
 echo ""
 
-ask "Init system — OpenRC or systemd?"
+ask "OpenRC or systemd?"
 ask "  1) OpenRC  (Gentoo's native init, lightweight)"
 ask "  2) systemd (used by most other distros)"
 read -rp "  Choice [1/2]: " INIT_CHOICE
@@ -92,28 +91,47 @@ case "$INIT_CHOICE" in
 esac
 echo ""
 
+echo ""
+
+ask "Which C library do you want?"
+ask "  1) glibc"
+ask "  2) musl"
+read -rp "  Choice [1/2]: " LIBC_CHOICE
+
+case "$LIBC_CHOICE" in
+    1) LIBC="glibc" ;;
+    2) LIBC="musl" ;;
+    *) die "Invalid choice. Enter 1 or 2." ;;
+esac
+echo ""
+
 ask "Do you want to enable binary support (binpackages)? [y/N]"
 read -rp "  Choice [y/N]: " BIN_CHOICE
 case "$BIN_CHOICE" in
     [yY][eE][sS]|[yY])
         USE_BINPKG="yes"
-        ask "Do you also want to use the x86-64-v3 binary repository?"
-        ask "  This provides optimized packages for newer CPUs."
-        ask "  Choose 'n' for the standard x86-64 repository (works on older/any CPUs)."
-        read -rp "  Choice [y/N]: " BIN_V3_CHOICE
-        case "$BIN_V3_CHOICE" in
-            [yY][eE][sS]|[yY]) USE_BINPKG_V3="yes" ;;
-            *)                 USE_BINPKG_V3="no"  ;;
-        esac
+        if [ "$LIBC" = "musl" ]; then
+            USE_BINPKG_V3="no"
+            info "The x86-64-v3 binhost is unavailable for musl; using the standard musl binhost."
+        else
+            ask "Do you also want to use the x86-64-v3 binary repository?"
+            ask "  This provides optimized packages for newer CPUs."
+            ask "  Choose 'n' for the standard x86-64 repository (works on older/any CPUs)."
+            read -rp "  Choice [y/N]: " BIN_V3_CHOICE
+            case "$BIN_V3_CHOICE" in
+                [yY][eE][sS]|[yY]) USE_BINPKG_V3="yes" ;;
+                *)                 USE_BINPKG_V3="no"  ;;
+            esac
+        fi
         ;;
     *)
         USE_BINPKG="no"
         USE_BINPKG_V3="no"
         ;;
 esac
-echo ""
 
-info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  binpkg=$USE_BINPKG  v3=$USE_BINPKG_V3"
+
+info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  libc=$LIBC  binpkg=$USE_BINPKG  v3=$USE_BINPKG_V3"
 echo ""
 
 info "============================================================"
@@ -148,13 +166,23 @@ info " STAGE3 DOWNLOAD"
 info "============================================================"
 echo ""
 info "Opening the Gentoo downloads page in the Links browser."
-info "Navigate to: releases → amd64 → autobuilds"
 
-if [ "$INIT_SYSTEM" = "openrc" ]; then
-    info "Download: stage3-amd64-desktop-openrc-*.tar.xz"
+if [ "$LIBC" = "musl" ]; then
+    if [ "$INIT_SYSTEM" = "openrc" ]; then
+        STAGE3_PATTERN="stage3-amd64-musl-openrc-*.tar.xz"
+    else
+        STAGE3_PATTERN="stage3-amd64-musl-systemd-*.tar.xz"
+    fi
 else
-    info "Download: stage3-amd64-desktop-systemd-*.tar.xz"
+    if [ "$INIT_SYSTEM" = "openrc" ]; then
+        STAGE3_PATTERN="stage3-amd64-desktop-openrc-*.tar.xz"
+    else
+        STAGE3_PATTERN="stage3-amd64-desktop-systemd-*.tar.xz"
+    fi
 fi
+
+info "Download the matching stage3:"
+info "  $STAGE3_PATTERN"
 
 warn "When the download finishes, press 'q' to quit Links."
 echo ""
@@ -162,16 +190,20 @@ read -rp "  Press ENTER to open Links..."
 echo ""
 
 cd /mnt/gentoo
-links "https://www.gentoo.org/downloads/amd64/#stages"
+
+if [ "$LIBC" = "musl" ]; then
+    links "https://www.gentoo.org/downloads/amd64/#stages-advanced"
+else
+    links "https://www.gentoo.org/downloads/amd64/#stages"
+fi
 
 echo ""
-TARBALL=$(ls /mnt/gentoo/stage3-amd64-*.tar.xz 2>/dev/null | head -n1)
-[ -z "$TARBALL" ] && die "No stage3 tarball found in /mnt/gentoo. Did the download finish?"
+TARBALL=$(find /mnt/gentoo -maxdepth 1 -type f -name "$STAGE3_PATTERN" -print -quit)
+[ -z "$TARBALL" ] && die "No matching stage3 found: $STAGE3_PATTERN"
 
 info "Found: $(basename "$TARBALL")"
 info "Extracting..."
-tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo 2>/dev/null \
-    || tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
+tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo 2>/dev/null || tar xpf "$TARBALL" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
 rm -f "$TARBALL"
 info "Stage3 extracted."
 echo ""
@@ -203,8 +235,21 @@ EMERGE_DEFAULT_OPTS="--keep-going"
 EOF
 fi
 
-if [ "$USE_BINPKG_V3" = "yes" ]; then
-    cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
+if [ "$LIBC" = "musl" ]; then
+    cat >> "$MAKE_CONF" <<'EOF'
+USE="X wayland pipewire sound-server pulseaudio networkmanager seatd -elogind"
+EOF
+fi
+
+if [ "$USE_BINPKG" = "yes" ]; then
+    if [ "$LIBC" = "musl" ]; then
+        cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
+[gentoo]
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64_musl
+location = /var/cache/binhost/gentoo
+EOF
+    elif [ "$USE_BINPKG_V3" = "yes" ]; then
+        cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
 [gentoo]
 priority = 9998
 sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64
@@ -215,6 +260,13 @@ priority = 9999
 sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3
 location = /var/cache/binhost/gentoo
 EOF
+    else
+        cat > /mnt/gentoo/etc/portage/binrepos.conf/gentoo.conf <<'EOF'
+[gentoo]
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64
+location = /var/cache/binhost/gentoo
+EOF
+    fi
 fi
 
 cat > /mnt/gentoo/etc/portage/package.use/installkernel <<'EOF'
@@ -256,12 +308,14 @@ mount --make-slave /mnt/gentoo/run
 cat > /mnt/gentoo/root/chroot-install.sh <<CHROOT
 #!/bin/bash
 set -e
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
 BOOT_MODE="$BOOT_MODE"
 INIT_SYSTEM="$INIT_SYSTEM"
 USE_BINPKG="$USE_BINPKG"
 USE_BINPKG_V3="$USE_BINPKG_V3"
 NEW_HOSTNAME="$NEW_HOSTNAME"
+LIBC="$LIBC"
 LOCALE="$LOCALE"
 GRUB_DISK="$GRUB_DISK"
 
@@ -269,19 +323,22 @@ info() { echo -e "\033[0;32m[CHROOT]\033[0m \$*"; }; warn() { echo -e "\033[1;33
 
 info "Updating Portage..."
 emerge-webrsync -q
+emerge --sync -q
 
 info "Selecting desktop/\${INIT_SYSTEM} profile..."
 
-if [ "\${INIT_SYSTEM}" = "openrc" ]; then
-    PROFILE_NUM=\$(eselect profile list \
-        | grep -E 'desktop[[:space:]]' \
-        | grep -v systemd | grep -v gnome | grep -v kde \
-        | head -n1 | awk -F'[][]' '{print \$2}')
+if [ "\${LIBC}" = "musl" ]; then
+    if [ "\${INIT_SYSTEM}" = "openrc" ]; then
+        PROFILE_NUM=\$(eselect profile list | grep -E 'default/linux/amd64/23\.0/musl[[:space:]]' | head -n1 | awk -F'[][]' '{print \$2}')
+    else
+        PROFILE_NUM=\$(eselect profile list | grep -E 'default/linux/amd64/23\.0/musl/systemd[[:space:]]' | head -n1 | awk -F'[][]' '{print \$2}')
+    fi
 else
-    PROFILE_NUM=\$(eselect profile list \
-        | grep -E 'desktop.*systemd' \
-        | grep -v gnome | grep -v kde \
-        | head -n1 | awk -F'[][]' '{print \$2}')
+    if [ "\${INIT_SYSTEM}" = "openrc" ]; then
+        PROFILE_NUM=\$(eselect profile list | grep -E 'desktop[[:space:]]' | grep -v systemd | grep -v gnome | grep -v kde | head -n1 | awk -F'[][]' '{print \$2}')
+    else
+        PROFILE_NUM=\$(eselect profile list | grep -E 'desktop.*systemd' | grep -v gnome | grep -v kde | head -n1 | awk -F'[][]' '{print \$2}')
+    fi
 fi
 
 [ -z "\$PROFILE_NUM" ] && {
@@ -299,12 +356,20 @@ if [ "\${USE_BINPKG}" = "yes" ]; then
     getuto -q 2>/dev/null || getuto
 fi
 
-info "Configuring locale: \${LOCALE}"
-echo "\${LOCALE} UTF-8" >> /etc/locale.gen
-locale-gen 2>/dev/null
-LOCALE_NUM=\$(eselect locale list | grep "\${LOCALE}" | head -n1 | awk -F'[][]' '{print \$2}')
-[ -n "\$LOCALE_NUM" ] && eselect locale set "\$LOCALE_NUM"
-env-update && source /etc/profile
+if [ "\${LIBC}" = "musl" ]; then
+    info "Configuring musl locale..."
+    echo 'LANG=C.UTF-8' > /etc/locale.conf
+    echo 'export LANG=C.UTF-8' > /etc/env.d/02locale
+    env-update
+    source /etc/profile
+else
+    info "Configuring locale: \${LOCALE}"
+    echo "\${LOCALE} UTF-8" >> /etc/locale.gen
+    locale-gen 2>/dev/null
+    LOCALE_NUM=\$(eselect locale list | grep "\${LOCALE}" | head -n1 | awk -F'[][]' '{print \$2}')
+    [ -n "\$LOCALE_NUM" ] && eselect locale set "\$LOCALE_NUM"
+    env-update && source /etc/profile
+fi
 
 emerge --ask=n app-portage/cpuid2cpuflags
 mkdir -p /etc/portage/package.use
@@ -316,12 +381,10 @@ echo 'ACCEPT_LICENSE="*"' >> /etc/portage/make.conf
 
 if [ "\${USE_BINPKG}" = "yes" ]; then
     emerge -q --ask=n sys-kernel/linux-firmware
-    emerge -q --ask=n sys-firmware/sof-firmware \
-        || warn "sof-firmware not available, skipping."
+    emerge -q --ask=n sys-firmware/sof-firmware || warn "sof-firmware not available, skipping."
 else
     emerge --ask=n sys-kernel/linux-firmware
-    emerge --ask=n sys-firmware/sof-firmware \
-        || warn "sof-firmware not available, skipping."
+    emerge --ask=n sys-firmware/sof-firmware || warn "sof-firmware not available, skipping."
 fi
 
 if [ "\${USE_BINPKG}" = "yes" ]; then
@@ -336,6 +399,15 @@ ROOT_UUID=\$(findmnt -n -o UUID /)
 cat > /etc/dracut.conf.d/00-installkernel.conf <<EOF
 kernel_cmdline=" root=UUID=\${ROOT_UUID} "
 EOF
+
+if [ "\${LIBC}" = "musl" ]; then
+    if [ "\${INIT_SYSTEM}" = "openrc" ]; then
+        echo 'sys-auth/pam_xdg ~amd64' > /etc/portage/package.accept_keywords/pam
+        emerge -q --ask=n sys-apps/dbus pam_xdg
+        echo 'session    optional    pam_xdg.so' >> /etc/pam.d/system-login
+        rc-update add dbus default
+    fi    
+fi
 
 if [ "\${USE_BINPKG}" = "yes" ]; then
     info "Installing gentoo-kernel-bin..."
@@ -418,7 +490,7 @@ if [ "\${CREATE_USER}" = "y" ]; then
     read -rp "  Username: " NEW_USER
 
     if [ -z "\${NEW_USER}" ]; then
-        warn "No username entered — skipping user creation."
+        warn "No username entered,skipping user creation."
     else
         useradd -m -G wheel,audio,video -s /bin/bash "\${NEW_USER}"
         info "User '\${NEW_USER}' created and added to: wheel, audio, video."
