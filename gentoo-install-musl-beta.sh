@@ -323,6 +323,7 @@ info() { echo -e "\033[0;32m[CHROOT]\033[0m \$*"; }; warn() { echo -e "\033[1;33
 
 info "Updating Portage..."
 emerge-webrsync -q
+emerge --sync -q
 
 info "Selecting desktop/\${INIT_SYSTEM} profile..."
 
@@ -398,6 +399,15 @@ ROOT_UUID=\$(findmnt -n -o UUID /)
 cat > /etc/dracut.conf.d/00-installkernel.conf <<EOF
 kernel_cmdline=" root=UUID=\${ROOT_UUID} "
 EOF
+
+if [ "\${LIBC}" = "musl" ]; then
+    if [ "\${INIT_SYSTEM}" = "openrc" ]; then
+        echo 'sys-auth/pam_xdg ~amd64' > /etc/portage/package.accept_keywords/pam
+        emerge -q --ask=n sys-apps/dbus pam_xdg
+        echo 'session    optional    pam_xdg.so' >> /etc/pam.d/system-login
+        rc-update add dbus default
+    fi    
+fi
 
 if [ "\${USE_BINPKG}" = "yes" ]; then
     info "Installing gentoo-kernel-bin..."
