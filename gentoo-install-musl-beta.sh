@@ -237,7 +237,7 @@ fi
 
 if [ "$LIBC" = "musl" ]; then
     cat >> "$MAKE_CONF" <<'EOF'
-USE="X wayland pipewire sound-server pulseaudio networkmanager"
+USE="X wayland pipewire sound-server pulseaudio networkmanager seatd -elogind"
 EOF
 fi
 
