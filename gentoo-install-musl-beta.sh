@@ -110,21 +110,26 @@ read -rp "  Choice [y/N]: " BIN_CHOICE
 case "$BIN_CHOICE" in
     [yY][eE][sS]|[yY])
         USE_BINPKG="yes"
-        ask "Do you also want to use the x86-64-v3 binary repository?"
-        ask "  This provides optimized packages for newer CPUs."
-        ask "  Choose 'n' for the standard x86-64 repository (works on older/any CPUs)."
-        read -rp "  Choice [y/N]: " BIN_V3_CHOICE
-        case "$BIN_V3_CHOICE" in
-            [yY][eE][sS]|[yY]) USE_BINPKG_V3="yes" ;;
-            *)                 USE_BINPKG_V3="no"  ;;
-        esac
+        if [ "$LIBC" = "musl" ]; then
+            USE_BINPKG_V3="no"
+            info "The x86-64-v3 binhost is unavailable for musl; using the standard musl binhost."
+        else
+            ask "Do you also want to use the x86-64-v3 binary repository?"
+            ask "  This provides optimized packages for newer CPUs."
+            ask "  Choose 'n' for the standard x86-64 repository (works on older/any CPUs)."
+            read -rp "  Choice [y/N]: " BIN_V3_CHOICE
+            case "$BIN_V3_CHOICE" in
+                [yY][eE][sS]|[yY]) USE_BINPKG_V3="yes" ;;
+                *)                 USE_BINPKG_V3="no"  ;;
+            esac
+        fi
         ;;
     *)
         USE_BINPKG="no"
         USE_BINPKG_V3="no"
         ;;
 esac
-echo ""
+
 
 info "Selected: boot=$BOOT_MODE  init=$INIT_SYSTEM  libc=$LIBC  binpkg=$USE_BINPKG  v3=$USE_BINPKG_V3"
 echo ""
