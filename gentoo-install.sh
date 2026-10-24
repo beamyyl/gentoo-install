@@ -65,8 +65,7 @@ esac
 echo ""
 
 if [ "$BOOT_MODE" = "uefi" ]; then
-    mountpoint -q /mnt/gentoo/efi \
-        || die "/mnt/gentoo/efi is not mounted. Mount your EFI partition and re-run."
+    mountpoint -q /mnt/gentoo/efi || die "/mnt/gentoo/efi is not mounted. Mount your EFI partition and re-run."
     info "UEFI mode selected. EFI mount verified."
 else
     info "BIOS mode selected."
